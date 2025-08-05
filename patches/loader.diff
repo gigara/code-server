@@ -1,0 +1,41 @@
+Add devant loader gif to workbench HTML files.
+This is to provide a visual indication that the workbench is loading, enhancing user experience during startup.
+
+Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
++++ code-server/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
+@@ -35,6 +35,9 @@
+ 	</head>
+ 
+ 	<body aria-label="">
++		<div id="vscode-loader" style="display: flex; align-items: center; justify-content: center; height: 100vh;">
++			<img src="{{BASE}}/_static/src/browser/media/loader.gif" alt="Loading..." width="400px"/>
++		</div>
+ 	</body>
+ 
+ 	<!-- Startup (do not modify order of script tags!) -->
+Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench.html
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/code/browser/workbench/workbench.html
++++ code-server/lib/vscode/src/vs/code/browser/workbench/workbench.html
+@@ -32,6 +32,9 @@
+ 	</head>
+ 
+ 	<body aria-label="">
++		<div id="vscode-loader" style="display: flex; align-items: center; justify-content: center; height: 100vh;">
++			<img src="{{BASE}}/_static/src/browser/media/loader.gif" alt="Loading..." width="400px"/>
++		</div>
+ 	</body>
+ 
+ 	<!-- Startup (do not modify order of script tags!) -->
+Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/code/browser/workbench/workbench.ts
++++ code-server/lib/vscode/src/vs/code/browser/workbench/workbench.ts
+@@ -637,4 +637,5 @@ class WorkspaceProvider implements IWork
+ 			? undefined /* with a remote without embedder-preferred storage, store on the remote */
+ 			: new LocalStorageSecretStorageProvider(secretStorageCrypto),
+ 	});
++	mainWindow.document.body.removeChild(document.getElementById('vscode-loader')!);
+ })();
