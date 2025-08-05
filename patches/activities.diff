@@ -1,0 +1,29 @@
+Move debug and extensions activities to auxiliary sidepanel
+This patch modifies the view container locations for the debug and extensions activities in the VS Code workbench
+
+Index: code-server/lib/vscode/src/vs/workbench/contrib/debug/browser/debug.contribution.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/workbench/contrib/debug/browser/debug.contribution.ts
++++ code-server/lib/vscode/src/vs/workbench/contrib/debug/browser/debug.contribution.ts
+@@ -457,7 +457,7 @@ const viewContainer = Registry.as<IViewC
+ 	icon: icons.runViewIcon,
+ 	alwaysUseContainerInfo: true,
+ 	order: 3,
+-}, ViewContainerLocation.Sidebar);
++}, ViewContainerLocation.AuxiliaryBar);
+ 
+ // Register default debug views
+ const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
+Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
++++ code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
+@@ -124,7 +124,7 @@ export const VIEW_CONTAINER = Registry.a
+ 		order: 4,
+ 		rejectAddedViews: true,
+ 		alwaysUseContainerInfo: true,
+-	}, ViewContainerLocation.Sidebar);
++	}, ViewContainerLocation.AuxiliaryBar);
+ 
+ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
+ 	.registerConfiguration({
