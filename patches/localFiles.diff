@@ -9,7 +9,7 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/files/browser/localFilePe
 ===================================================================
 --- /dev/null
 +++ code-server/lib/vscode/src/vs/workbench/contrib/files/browser/localFilePersistence.ts
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,147 @@
 +/*---------------------------------------------------------------------------------------------
 + *  Copyright (c) Microsoft Corporation. All rights reserved.
 + *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -21,6 +21,10 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/files/browser/localFilePe
 +import { IModelService } from '../../../../editor/common/services/model.js';
 +import { VSBuffer } from '../../../../base/common/buffer.js';
 +import { URI } from '../../../../base/common/uri.js';
++import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
++import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
++import { MenuRegistry, MenuId } from '../../../../platform/actions/common/actions.js';
++import { localize } from '../../../../nls.js';
 +
 +export class LocalFilePersistenceContribution implements IWorkbenchContribution {
 +	static readonly ID = 'workbench.contrib.localFilePersistence';
@@ -37,6 +41,7 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/files/browser/localFilePe
 +		this.restoreFilesFromLocalStorage();
 +		this.subscribeToModelChanges();
 +		this.subscribeToFileOperations();
++		this.registerCommands();
 +	}
 +
 +	private isInWorkspace(uri: URI): boolean {
@@ -107,6 +112,48 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/files/browser/localFilePe
 +					localStorage.removeItem(key);
 +				}
 +			}
++		});
++	}
++
++	private registerCommands() {
++		const commandId = 'devantEditor.clearLocalStorage';
++		const commandTitle = localize('devantEditor.clearLocalStorage', 'Clear Local File Storage');
++		
++		// Register the command
++		CommandsRegistry.registerCommand({
++			id: commandId,
++			handler: (accessor: ServicesAccessor) => {
++				this.clearLocalStorage();
++			},
++			metadata: {
++				description: localize('devantEditor.clearLocalStorage.description', 'Clear local file storage for workspace files')
++			}
++		});
++
++		// Register the command in the Command Palette
++		MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
++			command: {
++				id: commandId,
++				title: commandTitle,
++				category: localize('devantEditor.category', 'File Storage')
++			}
++		});
++	}
++
++	private clearLocalStorage() {
++		const keysToRemove: string[] = [];
++		
++		// Collect all keys that match our prefix
++		for (let i = 0; i < localStorage.length; i++) {
++			const key = localStorage.key(i);
++			if (key && key.startsWith(this.prefix)) {
++				keysToRemove.push(key);
++			}
++		}
++		
++		// Remove all matching keys
++		keysToRemove.forEach(key => {
++			localStorage.removeItem(key);
 +		});
 +	}
 +}
