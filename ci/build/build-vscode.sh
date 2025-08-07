@@ -73,19 +73,19 @@ main() {
     "enableTelemetry": true,
     "quality": "stable",
     "codeServerVersion": "$VERSION",
-    "nameShort": "code-server",
-    "nameLong": "code-server",
-    "applicationName": "code-server",
-    "dataFolderName": ".code-server",
+    "nameShort": "devant-editor",
+    "nameLong": "devant-editor",
+    "applicationName": "devant-editor",
+    "dataFolderName": ".devant-editor",
     "win32MutexName": "codeserver",
-    "licenseUrl": "https://github.com/coder/code-server/blob/main/LICENSE",
-    "win32DirName": "code-server",
-    "win32NameVersion": "code-server",
-    "win32AppUserModelId": "coder.code-server",
-    "win32ShellNameShort": "c&ode-server",
-    "darwinBundleIdentifier": "com.coder.code.server",
-    "linuxIconName": "com.coder.code.server",
-    "reportIssueUrl": "https://github.com/coder/code-server/issues/new",
+    "licenseUrl": "https://github.com/wso2/vscode-extensions",
+    "win32DirName": "devant-editor",
+    "win32NameVersion": "devant-editor",
+    "win32AppUserModelId": "wso2.devant-editor",
+    "win32ShellNameShort": "d&evant-editor",
+    "darwinBundleIdentifier": "com.wso2.devant.editor",
+    "linuxIconName": "com.wso2.devant.editor",
+    "reportIssueUrl": "https://github.com/wso2/vscode-extensions/issues/new",
     "documentationUrl": "https://go.microsoft.com/fwlink/?LinkID=533484#vscode",
     "keyboardShortcutsUrlMac": "https://go.microsoft.com/fwlink/?linkid=832143",
     "keyboardShortcutsUrlLinux": "https://go.microsoft.com/fwlink/?linkid=832144",
@@ -99,10 +99,13 @@ main() {
     "trustedExtensionAuthAccess": [
       "vscode.git", "vscode.github",
       "github.vscode-pull-request-github",
-      "github.copilot", "github.copilot-chat"
+      "github.copilot", "github.copilot-chat",
+      "wso2.ballerina", "wso2.ballerina-integrator",
+      "wso2.wso2-platform",
+      "wso2.micro-integrator"
     ],
     "aiConfig": {
-      "ariaKey": "code-server"
+      "ariaKey": "devant-editor",
     }
   }
 EOF
