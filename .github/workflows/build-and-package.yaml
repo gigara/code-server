@@ -1,0 +1,307 @@
+name: Build Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., v4.9.1). If not provided, uses 0.0.0-dev'
+        type: string
+        required: false
+        default: 'v0.0.0-dev'
+
+env:
+  DISABLE_V8_COMPILE_CACHE: 1
+
+jobs:
+  build-code-server:
+    name: Build code-server npm package
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install system dependencies
+        run: sudo apt update && sudo apt install -y libkrb5-dev
+
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: quilt
+          version: 1.0
+
+      - name: Apply patches
+        run: quilt push -a
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            test/package-lock.json
+
+      - name: Install dependencies
+        run: SKIP_SUBMODULE_DEPS=1 npm ci
+
+      # Set version for the build
+      - name: Set VERSION
+        id: version
+        run: |
+          INPUT_VERSION="${{ inputs.version }}"
+          if [ -n "$INPUT_VERSION" ]; then
+            # Strip v prefix if present
+            VERSION="${INPUT_VERSION#v}"
+          else
+            VERSION="0.0.0-dev"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Build code-server
+        run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Get Code's git hash for caching
+      - name: Get latest lib/vscode rev
+        id: vscode-rev
+        run: echo "rev=$(git rev-parse HEAD:./lib/vscode)" >> $GITHUB_OUTPUT
+
+      # Cache VSCode build
+      - name: Fetch prebuilt Code package from cache
+        id: cache-vscode
+        uses: actions/cache@v4
+        with:
+          path: lib/vscode-reh-web-*
+          key: vscode-reh-package-v1-${{ steps.vscode-rev.outputs.rev }}-${{ hashFiles('patches/*.diff', 'ci/build/build-vscode.sh') }}
+
+      - name: Build vscode
+        if: steps.cache-vscode.outputs.cache-hit != 'true'
+        run: |
+          pushd lib/vscode
+          npm ci
+          popd
+          npm run build:vscode
+
+      # Build release package
+      - name: Build release package
+        run: npm run release
+
+      # Modify package.json version
+      - name: Update package version
+        run: |
+          echo "Updating version in release/package.json to $VERSION"
+          npm version --prefix release "$VERSION" --no-git-tag-version
+          
+          echo "Updating version in lib/vscode/product.json"
+          tmp=$(mktemp)
+          jq ".codeServerVersion = \"$VERSION\"" release/lib/vscode/product.json > "$tmp" && mv "$tmp" release/lib/vscode/product.json
+          chmod 644 release/lib/vscode/product.json
+
+      # Create package archive
+      - name: Create package archive
+        run: tar -czf package.tar.gz release
+
+      - name: Upload npm package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: ./package.tar.gz
+          retention-days: 30
+
+  build-packages-linux:
+    name: Build Linux packages (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build-code-server
+    container: "python:3.8-slim-buster"
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            prefix: x86_64-linux-gnu
+            npm_arch: x64
+            apt_arch: amd64
+          - arch: arm64
+            prefix: aarch64-linux-gnu
+            npm_arch: arm64
+            apt_arch: arm64
+          - arch: armv7l
+            prefix: arm-linux-gnueabihf
+            npm_arch: armv7l
+            apt_arch: armhf
+
+    env:
+      AR: ${{ format('{0}-ar', matrix.prefix) }}
+      AS: ${{ format('{0}-as', matrix.prefix) }}
+      CC: ${{ format('{0}-gcc', matrix.prefix) }}
+      CPP: ${{ format('{0}-cpp', matrix.prefix) }}
+      CXX: ${{ format('{0}-g++', matrix.prefix) }}
+      FC: ${{ format('{0}-gfortran', matrix.prefix) }}
+      LD: ${{ format('{0}-ld', matrix.prefix) }}
+      STRIP: ${{ format('{0}-strip', matrix.prefix) }}
+      PKG_CONFIG_PATH: ${{ format('/usr/lib/{0}/pkgconfig', matrix.prefix) }}
+      TARGET_ARCH: ${{ matrix.apt_arch }}
+      npm_config_arch: ${{ matrix.npm_arch }}
+      PKG_ARCH: ${{ matrix.arch }}
+      npm_config_build_from_source: true
+      VERSION: ${{ needs.build-code-server.outputs.version }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            test/package-lock.json
+
+      - name: Install cross-compiler and system dependencies
+        run: |
+          sed -i 's/deb\.debian\.org/archive.debian.org/g' /etc/apt/sources.list
+          dpkg --add-architecture $TARGET_ARCH
+          apt update && apt install -y --no-install-recommends \
+            crossbuild-essential-$TARGET_ARCH \
+            libx11-dev:$TARGET_ARCH \
+            libx11-xcb-dev:$TARGET_ARCH \
+            libxkbfile-dev:$TARGET_ARCH \
+            libsecret-1-dev:$TARGET_ARCH \
+            libkrb5-dev:$TARGET_ARCH \
+            ca-certificates \
+            curl wget rsync gettext-base
+
+      - name: Install dependencies
+        run: SKIP_SUBMODULE_DEPS=1 npm ci
+
+      - name: Install nfpm
+        run: |
+          mkdir -p ~/.local/bin
+          curl -sSfL https://github.com/goreleaser/nfpm/releases/download/v2.3.1/nfpm_2.3.1_$(uname -s)_$(uname -m).tar.gz | tar -C ~/.local/bin -zxv nfpm
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Download npm package
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+
+      - name: Extract and build standalone
+        run: |
+          tar -xzf package.tar.gz
+          npm run release:standalone
+
+      - name: Replace node with cross-compile equivalent
+        run: |
+          node_version=$(node --version)
+          wget https://nodejs.org/dist/${node_version}/node-${node_version}-linux-${npm_config_arch}.tar.xz
+          tar -xf node-${node_version}-linux-${npm_config_arch}.tar.xz node-${node_version}-linux-${npm_config_arch}/bin/node --strip-components=2
+          mv ./node ./release-standalone/lib/node
+
+      - name: Build packages with nfpm
+        run: npm run package $PKG_ARCH
+
+      - name: Upload packages artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-linux-${{ matrix.arch }}
+          path: ./release-packages/*
+          retention-days: 30
+
+  build-docker-images:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build-code-server, build-packages-linux]
+    env:
+      VERSION: ${{ needs.build-code-server.outputs.version }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Download all Linux packages
+      - name: Download amd64 packages
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-linux-amd64
+          path: release-packages
+
+      - name: Download arm64 packages
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-linux-arm64
+          path: release-packages
+
+      - name: Download armv7l packages
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-linux-armv7l
+          path: release-packages
+
+      - name: List downloaded packages
+        run: ls -la release-packages/
+
+      - name: Build Docker images
+        run: |
+          echo "Building Docker images..."
+          docker buildx bake -f ci/release-image/docker-bake.hcl
+
+      # Save Docker images as artifacts
+      - name: Save Docker images as artifacts
+        run: |
+          mkdir -p docker-images
+          
+          # Get list of built images
+          echo "Available images:"
+          docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
+          
+          # Save main images (adjust image names based on what's actually built)
+          if docker images -q wso2/devant-editor:latest >/dev/null 2>&1; then
+            echo "Saving wso2/devant-editor:latest..."
+            docker save wso2/devant-editor:latest | gzip > docker-images/code-server-latest.tar.gz
+          fi
+          
+          if docker images -q wso2/devant-editor:debian >/dev/null 2>&1; then
+            echo "Saving wso2/devant-editor:debian..."
+            docker save wso2/devant-editor:debian | gzip > docker-images/code-server-debian.tar.gz
+          fi
+          
+          if docker images -q wso2/devant-editor:ubuntu >/dev/null 2>&1; then
+            echo "Saving wso2/devant-editor:ubuntu..."
+            docker save wso2/devant-editor:ubuntu | gzip > docker-images/code-server-ubuntu.tar.gz
+          fi
+          
+          # Save any other code-server images that were built
+          for image in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "code-server" | head -10); do
+            if [[ ! "$image" =~ (latest|debian|ubuntu) ]]; then
+              safe_name=$(echo "$image" | sed 's/[\/:]/-/g')
+              echo "Saving $image as $safe_name.tar.gz..."
+              docker save "$image" | gzip > "docker-images/${safe_name}.tar.gz"
+            fi
+          done
+          
+          echo "Saved Docker images:"
+          ls -lh docker-images/
+
+      - name: Upload Docker images artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: docker-images/*.tar.gz
+          retention-days: 30
