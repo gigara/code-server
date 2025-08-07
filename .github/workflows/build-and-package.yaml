@@ -117,40 +117,24 @@ jobs:
           retention-days: 30
 
   build-packages-linux:
-    name: Build Linux packages (${{ matrix.arch }})
+    name: Build Linux packages (amd64 only)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: build-code-server
     container: "python:3.8-slim-buster"
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            prefix: x86_64-linux-gnu
-            npm_arch: x64
-            apt_arch: amd64
-          - arch: arm64
-            prefix: aarch64-linux-gnu
-            npm_arch: arm64
-            apt_arch: arm64
-          - arch: armv7l
-            prefix: arm-linux-gnueabihf
-            npm_arch: armv7l
-            apt_arch: armhf
-
     env:
-      AR: ${{ format('{0}-ar', matrix.prefix) }}
-      AS: ${{ format('{0}-as', matrix.prefix) }}
-      CC: ${{ format('{0}-gcc', matrix.prefix) }}
-      CPP: ${{ format('{0}-cpp', matrix.prefix) }}
-      CXX: ${{ format('{0}-g++', matrix.prefix) }}
-      FC: ${{ format('{0}-gfortran', matrix.prefix) }}
-      LD: ${{ format('{0}-ld', matrix.prefix) }}
-      STRIP: ${{ format('{0}-strip', matrix.prefix) }}
-      PKG_CONFIG_PATH: ${{ format('/usr/lib/{0}/pkgconfig', matrix.prefix) }}
-      TARGET_ARCH: ${{ matrix.apt_arch }}
-      npm_config_arch: ${{ matrix.npm_arch }}
-      PKG_ARCH: ${{ matrix.arch }}
+      AR: x86_64-linux-gnu-ar
+      AS: x86_64-linux-gnu-as
+      CC: x86_64-linux-gnu-gcc
+      CPP: x86_64-linux-gnu-cpp
+      CXX: x86_64-linux-gnu-g++
+      FC: x86_64-linux-gnu-gfortran
+      LD: x86_64-linux-gnu-ld
+      STRIP: x86_64-linux-gnu-strip
+      PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
+      TARGET_ARCH: amd64
+      npm_config_arch: x64
+      PKG_ARCH: amd64
       npm_config_build_from_source: true
       VERSION: ${{ needs.build-code-server.outputs.version }}
 
@@ -213,12 +197,12 @@ jobs:
       - name: Upload packages artifact
         uses: actions/upload-artifact@v4
         with:
-          name: packages-linux-${{ matrix.arch }}
+          name: packages-linux-amd64
           path: ./release-packages/*
           retention-days: 30
 
-  build-docker-images:
-    name: Build Docker images
+  build-docker-image:
+    name: Build Docker image
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [build-code-server, build-packages-linux]
@@ -229,41 +213,40 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Download all Linux packages
+      # Download only AMD64 packages (sufficient for Docker build)
       - name: Download amd64 packages
         uses: actions/download-artifact@v4
         with:
           name: packages-linux-amd64
           path: release-packages
 
-      - name: Download arm64 packages
-        uses: actions/download-artifact@v4
-        with:
-          name: packages-linux-arm64
-          path: release-packages
-
-      - name: Download armv7l packages
-        uses: actions/download-artifact@v4
-        with:
-          name: packages-linux-armv7l
-          path: release-packages
-
       - name: List downloaded packages
         run: ls -la release-packages/
 
-      - name: Build Docker images
+      - name: Debug environment
         run: |
-          echo "Building Docker images..."
-          docker buildx bake -f ci/release-image/docker-bake.hcl
+          echo "Docker version:"
+          docker version
+          echo "Docker buildx version:"
+          docker buildx version
+          echo "Available disk space:"
+          df -h
+          echo "Environment variables:"
+          echo "VERSION=$VERSION"
+
+      - name: Build Docker image
+        run: |
+          echo "Building Docker image..."
+          # Build a simple Docker image using the existing Dockerfile
+          # Use only the AMD64 .deb package to keep it simple
+          docker build \
+            -t wso2/devant-editor:latest \
+            -t wso2/devant-editor:$VERSION \
+            -f ci/release-image/Dockerfile \
+            .
 
       # Save Docker images as artifacts
-      - name: Save Docker images as artifacts
+      - name: Save Docker image as artifact
         run: |
           mkdir -p docker-images
           
@@ -271,37 +254,17 @@ jobs:
           echo "Available images:"
           docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
           
-          # Save main images (adjust image names based on what's actually built)
-          if docker images -q wso2/devant-editor:latest >/dev/null 2>&1; then
-            echo "Saving wso2/devant-editor:latest..."
-            docker save wso2/devant-editor:latest | gzip > docker-images/code-server-latest.tar.gz
-          fi
+          # Save the main image
+          echo "Saving wso2/devant-editor:latest..."
+          docker save wso2/devant-editor:latest | gzip > docker-images/wso2-devant-editor.tar.gz
           
-          if docker images -q wso2/devant-editor:debian >/dev/null 2>&1; then
-            echo "Saving wso2/devant-editor:debian..."
-            docker save wso2/devant-editor:debian | gzip > docker-images/code-server-debian.tar.gz
-          fi
-          
-          if docker images -q wso2/devant-editor:ubuntu >/dev/null 2>&1; then
-            echo "Saving wso2/devant-editor:ubuntu..."
-            docker save wso2/devant-editor:ubuntu | gzip > docker-images/code-server-ubuntu.tar.gz
-          fi
-          
-          # Save any other code-server images that were built
-          for image in $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "code-server" | head -10); do
-            if [[ ! "$image" =~ (latest|debian|ubuntu) ]]; then
-              safe_name=$(echo "$image" | sed 's/[\/:]/-/g')
-              echo "Saving $image as $safe_name.tar.gz..."
-              docker save "$image" | gzip > "docker-images/${safe_name}.tar.gz"
-            fi
-          done
-          
-          echo "Saved Docker images:"
+          echo "Saved Docker image:"
           ls -lh docker-images/
 
       - name: Upload Docker images artifact
         uses: actions/upload-artifact@v4
         with:
           name: docker-images
-          path: docker-images/*.tar.gz
+          path: docker-images/
           retention-days: 30
+        if: always()
