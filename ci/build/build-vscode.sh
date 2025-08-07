@@ -105,7 +105,7 @@ main() {
       "wso2.micro-integrator"
     ],
     "aiConfig": {
-      "ariaKey": "devant-editor",
+      "ariaKey": "devant-editor"
     }
   }
 EOF
