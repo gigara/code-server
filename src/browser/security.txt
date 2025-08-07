@@ -1,6 +1,2 @@
-Contact: mailto:security@coder.com
-Acknowledgments: https://coder.com/security/thanks
+Contact: mailto:security@wso2.com
 Preferred-Languages: en-US
-Canonical: https://coder.com/.well-known/security.txt
-Policy: https://coder.com/security/policy
-Hiring: https://coder.com/careers
