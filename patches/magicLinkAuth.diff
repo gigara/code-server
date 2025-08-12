@@ -1,0 +1,90 @@
+Index: code-server/src/node/i18n/locales/en.json
+===================================================================
+--- code-server.orig/src/node/i18n/locales/en.json
++++ code-server/src/node/i18n/locales/en.json
+@@ -3,7 +3,7 @@
+   "LOGIN_BELOW": "Please log in below.",
+   "WELCOME": "Welcome to {{app}}",
+   "LOGIN_PASSWORD": "Check the config file at {{configFile}} for the password.",
+-  "LOGIN_USING_ENV_PASSWORD": "Password was set from $PASSWORD.",
++  "LOGIN_USING_ENV_PASSWORD": "",
+   "LOGIN_USING_HASHED_PASSWORD": "Password was set from $HASHED_PASSWORD.",
+   "SUBMIT": "SUBMIT",
+   "PASSWORD_PLACEHOLDER": "PASSWORD",
+Index: code-server/src/node/routes/login.ts
+===================================================================
+--- code-server.orig/src/node/routes/login.ts
++++ code-server/src/node/routes/login.ts
+@@ -67,6 +67,56 @@ router.use(async (req, res, next) => {
+ })
+ 
+ router.get("/", async (req, res) => {
++  // Check for magic link authentication via URL parameter
++  const urlPassword = sanitizeString(req.query.password as string)
++  
++  if (urlPassword) {
++    try {
++      const hashedPasswordFromArgs = req.args["password"]
++      
++      // Check rate limiting for magic link attempts too
++      if (!limiter.canTry()) {
++        throw new Error(i18n.t("LOGIN_RATE_LIMIT") as string)
++      }
++      
++      const passwordMethod = getPasswordMethod('')
++      const { isPasswordValid, hashedPassword } = await handlePasswordValidation({
++        passwordMethod,
++        hashedPasswordFromArgs,
++        passwordFromRequestBody: urlPassword,
++        passwordFromArgs: req.args.password,
++      })
++
++      if (isPasswordValid) {
++        // Set the session cookie
++        res.cookie(CookieKeys.Session, hashedPassword, getCookieOptions(req))
++        
++        // Redirect to the destination URL, removing the password parameter
++        const to = (typeof req.query.to === "string" && req.query.to) || "/"
++        redirect(req, res, to, { password: undefined })
++        return
++      }
++
++      // Invalid password - remove token and fall through to show login page
++      limiter.removeToken()
++      console.error(
++        "Failed magic link login attempt",
++        JSON.stringify({
++          xForwardedFor: req.headers["x-forwarded-for"],
++          remoteAddress: req.connection.remoteAddress,
++          userAgent: req.headers["user-agent"],
++          timestamp: Math.floor(new Date().getTime() / 1000),
++        }),
++      )
++    } catch (error: any) {
++      // On error, show the login page with error message
++      const renderedHtml = await getRoot(req, error)
++      res.send(renderedHtml)
++      return
++    }
++  }
++  
++  // Default behavior: show login page
+   res.send(await getRoot(req))
+ })
+ 
+Index: code-server/src/node/routes/vscode.ts
+===================================================================
+--- code-server.orig/src/node/routes/vscode.ts
++++ code-server/src/node/routes/vscode.ts
+@@ -128,6 +128,11 @@ router.get("/", ensureVSCodeLoaded, asyn
+     })
+   }
+ 
++  if (req.query.password) {
++    const to = (typeof req.query.to === "string" && req.query.to) || "/"
++    return redirect(req, res, to, { to: undefined, password: undefined })
++  }
++
+   if (NO_FOLDER_OR_WORKSPACE_QUERY && !FOLDER_OR_WORKSPACE_WAS_CLOSED) {
+     const settings = await req.settings.read()
+     const lastOpened = settings.query || {}
