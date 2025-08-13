@@ -106,7 +106,33 @@ main() {
     ],
     "aiConfig": {
       "ariaKey": "devant-editor"
-    }
+    },
+	  "builtInExtensions": [
+      {
+        "name": "wso2.wso2-platform",
+        "version": "1.0.11"
+      },
+      {
+        "name": "redhat.vscode-yaml",
+        "version": "1.18.0"
+      },
+      {
+        "name": "anweber.httpbook",
+        "version": "3.2.6"
+      },
+      {
+        "name": "anweber.vscode-httpyac",
+        "version": "6.16.7"
+      },
+      {
+        "name": "wso2.ballerina",
+        "version": "5.1.3"
+      },
+      {
+        "name": "wso2.ballerina-integrator",
+        "version": "1.0.4"
+      }
+	  ]
   }
 EOF
   ) > product.json
