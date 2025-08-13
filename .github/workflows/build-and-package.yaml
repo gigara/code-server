@@ -90,6 +90,12 @@ jobs:
           path: lib/vscode-reh-web-*
           key: vscode-reh-package-v1-${{ steps.vscode-rev.outputs.rev }}-${{ hashFiles('patches/*.diff', 'ci/build/build-vscode.sh') }}
 
+      - name: Fetch extensions from cache
+        uses: actions/cache@v4
+        with:
+          path: lib/vscode/.build/extensions
+          key: vscode-reh-extensions-v1-${{ steps.vscode-rev.outputs.rev }}-${{ hashFiles('patches/*.diff', 'ci/build/build-vscode.sh') }}
+
       - name: Build vscode
         if: steps.cache-vscode.outputs.cache-hit != 'true'
         run: |
@@ -117,11 +123,21 @@ jobs:
       - name: Create package archive
         run: tar -czf package.tar.gz release
 
+      - name: Create extensions archive
+        run: tar -czf extensions.tar.gz -C lib/vscode/.build/extensions .
+
       - name: Upload npm package artifact
         uses: actions/upload-artifact@v4
         with:
           name: npm-package
           path: ./package.tar.gz
+          retention-days: 30
+
+      - name: Upload builtin extensions
+        uses: actions/upload-artifact@v4
+        with:
+          name: extensions
+          path: ./extensions.tar.gz
           retention-days: 30
 
   build-packages-linux:
@@ -220,6 +236,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # Download only AMD64 packages (sufficient for Docker build)
       - name: Download amd64 packages
@@ -228,8 +246,16 @@ jobs:
           name: packages-linux-amd64
           path: release-packages
 
-      - name: List downloaded packages
-        run: ls -la release-packages/
+      - name: Download builtin extensions
+        uses: actions/download-artifact@v4
+        with:
+          name: extensions
+
+      - name: extract builtin extensions
+        run: |
+          mkdir -p builtInExtensions
+          tar -xzf extensions.tar.gz -C builtInExtensions
+          ls -la builtInExtensions
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

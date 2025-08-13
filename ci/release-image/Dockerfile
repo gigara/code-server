@@ -32,9 +32,8 @@ RUN sed -i "s/# en_US.UTF-8/en_US.UTF-8/" /etc/locale.gen \
 ENV LANG=en_US.UTF-8
 
 COPY ci/release-image/entrypoint.sh /usr/bin/entrypoint.sh
+COPY builtInExtensions/ /root/.vscode-server-devant/extensions
 RUN --mount=from=packages,src=/tmp,dst=/tmp/packages dpkg -i /tmp/packages/code-server*$(dpkg --print-architecture).deb
-
-COPY lib/vscode/.build/builtInExtensions/ /root/.vscode-server-devant/extensions
 
 # Allow users to have scripts run on container startup to prepare workspace.
 # https://github.com/coder/code-server/issues/5177
