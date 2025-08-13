@@ -107,6 +107,10 @@ main() {
     "aiConfig": {
       "ariaKey": "devant-editor"
     },
+    "extensionsGallery": {
+      "serviceUrl": "https://open-vsx.org/vscode/gallery",
+      "itemUrl": "https://open-vsx.org/vscode/item"
+    },
 	  "builtInExtensions": [
       {
         "name": "wso2.wso2-platform",

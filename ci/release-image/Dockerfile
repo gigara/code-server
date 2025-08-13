@@ -34,6 +34,8 @@ ENV LANG=en_US.UTF-8
 COPY ci/release-image/entrypoint.sh /usr/bin/entrypoint.sh
 RUN --mount=from=packages,src=/tmp,dst=/tmp/packages dpkg -i /tmp/packages/code-server*$(dpkg --print-architecture).deb
 
+COPY lib/vscode/.build/builtInExtensions/ /root/.vscode-server-devant/extensions
+
 # Allow users to have scripts run on container startup to prepare workspace.
 # https://github.com/coder/code-server/issues/5177
 ENV ENTRYPOINTD=${HOME}/entrypoint.d
@@ -44,4 +46,4 @@ EXPOSE 8081
 # docker-run.
 ENV USER=coder
 WORKDIR /home/coder
-ENTRYPOINT ["/usr/bin/entrypoint.sh", "--bind-addr", "0.0.0.0:8081", "--app-name", "Devant Editor", "."]
+ENTRYPOINT ["/usr/bin/entrypoint.sh", "--bind-addr", "0.0.0.0:8081", "--app-name", "Devant Editor", "--disable-workspace-trust", "--extensions-dir", "/root/.vscode-server-devant/extensions", "."]
