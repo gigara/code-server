@@ -1,0 +1,181 @@
+Add local file persistence to save and restore files from the browser's local storage.
+This contribution allows files to be saved to and restored from local storage, enabling persistence across sessions.
+This is particularly useful for local development environments where users may want to retain changes without committing them to a remote repository.
+It listens for model changes and file operations to update local storage accordingly.
+This patch also includes the registration of the LocalFilePersistenceContribution in the workbench contributions.
+This ensures that the local file persistence functionality is initialized during the workbench startup phase.
+
+Index: code-server/lib/vscode/src/vs/workbench/contrib/files/browser/localFilePersistence.ts
+===================================================================
+--- /dev/null
++++ code-server/lib/vscode/src/vs/workbench/contrib/files/browser/localFilePersistence.ts
+@@ -0,0 +1,147 @@
++/*---------------------------------------------------------------------------------------------
++ *  Copyright (c) Microsoft Corporation. All rights reserved.
++ *  Licensed under the MIT License. See License.txt in the project root for license information.
++ *--------------------------------------------------------------------------------------------*/
++
++import { IWorkbenchContribution } from '../../../common/contributions.js';
++import { IFileService, FileOperation } from '../../../../platform/files/common/files.js';
++import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
++import { IModelService } from '../../../../editor/common/services/model.js';
++import { VSBuffer } from '../../../../base/common/buffer.js';
++import { URI } from '../../../../base/common/uri.js';
++import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
++import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
++import { MenuRegistry, MenuId } from '../../../../platform/actions/common/actions.js';
++import { localize } from '../../../../nls.js';
++
++export class LocalFilePersistenceContribution implements IWorkbenchContribution {
++	static readonly ID = 'workbench.contrib.localFilePersistence';
++
++	private readonly prefix = 'devantEditor.localfile.';
++	private readonly workspaceUris: URI[];
++
++	constructor(
++		@IFileService private readonly fileService: IFileService,
++		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
++		@IModelService private readonly modelService: IModelService
++	) {
++		this.workspaceUris = this.workspaceContextService.getWorkspace().folders.map(f => f.uri);
++		this.restoreFilesFromLocalStorage();
++		this.subscribeToModelChanges();
++		this.subscribeToFileOperations();
++		this.registerCommands();
++	}
++
++	private isInWorkspace(uri: URI): boolean {
++		return this.workspaceUris.some(folderUri => uri.toString().startsWith(folderUri.toString()));
++	}
++
++	private async restoreFilesFromLocalStorage() {
++		for (let i = 0; i < localStorage.length; i++) {
++			const key = localStorage.key(i);
++			if (key && key.startsWith(this.prefix)) {
++				const uriString = key.substring(this.prefix.length);
++				try {
++					const uri = URI.parse(uriString);
++					if (this.isInWorkspace(uri)) {
++						const content = localStorage.getItem(key);
++						if (content !== null) {
++							await this.fileService.writeFile(uri, VSBuffer.fromString(content));
++						}
++					}
++				} catch (e) {
++					// Ignore malformed URIs
++					console.error('Failed to restore file from localStorage', key, e);
++				}
++			}
++		}
++	}
++
++	private subscribeToModelChanges() {
++		// Subscribe to all existing models
++		for (const model of this.modelService.getModels()) {
++			this.subscribeModel(model);
++		}
++		// Subscribe to new models
++		this.modelService.onModelAdded(model => this.subscribeModel(model));
++	}
++
++	private subscribeModel(model: { uri: URI; onDidChangeContent: (listener: () => void) => void; getValue: () => string }) {
++		if (!this.isInWorkspace(model.uri)) { return; }
++		model.onDidChangeContent(() => {
++			try {
++				localStorage.setItem(this.prefix + model.uri.toString(), model.getValue());
++			} catch (e) {
++				console.error('Failed to save file to localStorage', model.uri.toString(), e);
++			}
++		});
++	}
++
++	private subscribeToFileOperations() {
++		this.fileService.onDidRunOperation(e => {
++			if (e.operation === FileOperation.CREATE && this.isInWorkspace(e.resource)) {
++				localStorage.setItem(this.prefix + e.resource.toString(), '');
++			} else if (e.operation === FileOperation.MOVE && this.isInWorkspace(e.resource)) {
++				// Handle file move/rename: move localStorage entry from old path to new path
++				if (e.target) {
++					const oldKey = this.prefix + e.resource.toString();
++					const newKey = this.prefix + e.target.resource.toString();
++					const content = localStorage.getItem(oldKey);
++					if (content !== null) {
++						localStorage.removeItem(oldKey);
++						if (this.isInWorkspace(e.target.resource)) {
++							localStorage.setItem(newKey, content);
++						}
++					}
++				}
++			} else if (e.operation === FileOperation.DELETE && this.isInWorkspace(e.resource)) {
++				const key = this.prefix + e.resource.toString();
++				if (localStorage.getItem(key) !== null) {
++					localStorage.removeItem(key);
++				}
++			}
++		});
++	}
++
++	private registerCommands() {
++		const commandId = 'devantEditor.clearLocalStorage';
++		const commandTitle = localize('devantEditor.clearLocalStorage', 'Clear Local File Storage');
++		
++		// Register the command
++		CommandsRegistry.registerCommand({
++			id: commandId,
++			handler: (accessor: ServicesAccessor) => {
++				this.clearLocalStorage();
++			},
++			metadata: {
++				description: localize('devantEditor.clearLocalStorage.description', 'Clear local file storage for workspace files')
++			}
++		});
++
++		// Register the command in the Command Palette
++		MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
++			command: {
++				id: commandId,
++				title: commandTitle,
++				category: localize('devantEditor.category', 'File Storage')
++			}
++		});
++	}
++
++	private clearLocalStorage() {
++		const keysToRemove: string[] = [];
++		
++		// Collect all keys that match our prefix
++		for (let i = 0; i < localStorage.length; i++) {
++			const key = localStorage.key(i);
++			if (key && key.startsWith(this.prefix)) {
++				keysToRemove.push(key);
++			}
++		}
++		
++		// Remove all matching keys
++		keysToRemove.forEach(key => {
++			localStorage.removeItem(key);
++		});
++	}
++}
+Index: code-server/lib/vscode/src/vs/workbench/contrib/files/browser/files.contribution.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/workbench/contrib/files/browser/files.contribution.ts
++++ code-server/lib/vscode/src/vs/workbench/contrib/files/browser/files.contribution.ts
+@@ -35,6 +35,7 @@ import { FileEditorInputSerializer, File
+ import { ModesRegistry } from '../../../../editor/common/languages/modesRegistry.js';
+ import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+ import { TextFileEditor } from './editors/textFileEditor.js';
++import { LocalFilePersistenceContribution } from './localFilePersistence.js';
+ 
+ class FileUriLabelContribution implements IWorkbenchContribution {
+ 
+@@ -117,6 +118,9 @@ registerWorkbenchContribution2(Workspace
+ // Register Dirty Files Indicator
+ registerWorkbenchContribution2(DirtyFilesIndicator.ID, DirtyFilesIndicator, WorkbenchPhase.BlockStartup);
+ 
++// Register Local File Persistence (save+restore)
++registerWorkbenchContribution2(LocalFilePersistenceContribution.ID, LocalFilePersistenceContribution, WorkbenchPhase.BlockStartup);
++
+ // Configuration
+ const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
+ 
