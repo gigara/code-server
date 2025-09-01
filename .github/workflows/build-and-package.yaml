@@ -38,7 +38,7 @@ jobs:
           submodules: true
 
       - name: Install system dependencies
-        run: sudo apt update && sudo apt install -y libkrb5-dev
+        run: sudo apt update && sudo apt install -y libkrb5-dev libx11-dev libxkbfile-dev
 
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
