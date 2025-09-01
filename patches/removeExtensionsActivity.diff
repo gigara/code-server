@@ -2,7 +2,7 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 ===================================================================
 --- code-server.orig/lib/vscode/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
 +++ code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extensions.contribution.ts
-@@ -4,2042 +4,1983 @@
+@@ -4,2061 +4,2061 @@
   *--------------------------------------------------------------------------------------------*/
  
  import './media/extensionManagement.css';
@@ -10,17 +10,21 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -import { KeyMod, KeyCode } from '../../../../base/common/keyCodes.js';
 -import { Registry } from '../../../../platform/registry/common/platform.js';
 -import { MenuRegistry, MenuId, registerAction2, Action2, IMenuItem, IAction2Options } from '../../../../platform/actions/common/actions.js';
++// import { localize, localize2 } from '../../../../nls.js';
++// import { KeyMod, KeyCode } from '../../../../base/common/keyCodes.js';
++// import { Registry } from '../../../../platform/registry/common/platform.js';
++// import { MenuRegistry, MenuId, registerAction2, Action2, IMenuItem, IAction2Options } from '../../../../platform/actions/common/actions.js';
  import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 -import { ExtensionsLocalizedLabel, IExtensionManagementService, IExtensionGalleryService, PreferencesLocalizedLabel, EXTENSION_INSTALL_SOURCE_CONTEXT, ExtensionInstallSource, SortBy, FilterType, VerifyExtensionSignatureConfigKey } from '../../../../platform/extensionManagement/common/extensionManagement.js';
 -import { EnablementState, IExtensionManagementServerService, IPublisherInfo, IWorkbenchExtensionEnablementService, IWorkbenchExtensionManagementService } from '../../../services/extensionManagement/common/extensionManagement.js';
 -import { IExtensionIgnoredRecommendationsService, IExtensionRecommendationsService } from '../../../services/extensionRecommendations/common/extensionRecommendations.js';
 -import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions, IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
 -import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
--import { VIEWLET_ID, IExtensionsWorkbenchService, IExtensionsViewPaneContainer, TOGGLE_IGNORE_EXTENSION_ACTION_ID, INSTALL_EXTENSION_FROM_VSIX_COMMAND_ID, WORKSPACE_RECOMMENDATIONS_VIEW_ID, IWorkspaceRecommendedExtensionsView, AutoUpdateConfigurationKey, HasOutdatedExtensionsContext, SELECT_INSTALL_VSIX_EXTENSION_COMMAND_ID, LIST_WORKSPACE_UNSUPPORTED_EXTENSIONS_COMMAND_ID, ExtensionEditorTab, THEME_ACTIONS_GROUP, INSTALL_ACTIONS_GROUP, OUTDATED_EXTENSIONS_VIEW_ID, CONTEXT_HAS_GALLERY, extensionsSearchActionsMenu, UPDATE_ACTIONS_GROUP, IExtensionArg, ExtensionRuntimeActionType, EXTENSIONS_CATEGORY, AutoRestartConfigurationKey, extensionsFilterSubMenu, DefaultViewsContext } from '../common/extensions.js';
+-import { VIEWLET_ID, IExtensionsWorkbenchService, IExtensionsViewPaneContainer, TOGGLE_IGNORE_EXTENSION_ACTION_ID, INSTALL_EXTENSION_FROM_VSIX_COMMAND_ID, WORKSPACE_RECOMMENDATIONS_VIEW_ID, IWorkspaceRecommendedExtensionsView, AutoUpdateConfigurationKey, HasOutdatedExtensionsContext, SELECT_INSTALL_VSIX_EXTENSION_COMMAND_ID, LIST_WORKSPACE_UNSUPPORTED_EXTENSIONS_COMMAND_ID, ExtensionEditorTab, THEME_ACTIONS_GROUP, INSTALL_ACTIONS_GROUP, OUTDATED_EXTENSIONS_VIEW_ID, CONTEXT_HAS_GALLERY, extensionsSearchActionsMenu, UPDATE_ACTIONS_GROUP, IExtensionArg, ExtensionRuntimeActionType, EXTENSIONS_CATEGORY, AutoRestartConfigurationKey, extensionsFilterSubMenu, DefaultViewsContext, CONTEXT_EXTENSIONS_GALLERY_STATUS } from '../common/extensions.js';
 -import { InstallSpecificVersionOfExtensionAction, ConfigureWorkspaceRecommendedExtensionsAction, ConfigureWorkspaceFolderRecommendedExtensionsAction, SetColorThemeAction, SetFileIconThemeAction, SetProductIconThemeAction, ClearLanguageAction, ToggleAutoUpdateForExtensionAction, ToggleAutoUpdatesForPublisherAction, TogglePreReleaseExtensionAction, InstallAnotherVersionAction, InstallAction } from './extensionsActions.js';
 -import { ExtensionsInput } from '../common/extensionsInput.js';
 -import { ExtensionEditor } from './extensionEditor.js';
--import { StatusUpdater, MaliciousExtensionChecker, ExtensionsViewletViewsContribution, ExtensionsViewPaneContainer, BuiltInExtensionsContext, SearchMarketplaceExtensionsContext, RecommendedExtensionsContext, ExtensionsSortByContext, SearchHasTextContext, ExtensionsSearchValueContext } from './extensionsViewlet.js';
+-import { StatusUpdater, MaliciousExtensionChecker, ExtensionsViewletViewsContribution, ExtensionsViewPaneContainer, BuiltInExtensionsContext, SearchMarketplaceExtensionsContext, RecommendedExtensionsContext, ExtensionsSortByContext, SearchHasTextContext, ExtensionsSearchValueContext, ExtensionMarketplaceStatusUpdater } from './extensionsViewlet.js';
 -import { IConfigurationRegistry, Extensions as ConfigurationExtensions, ConfigurationScope } from '../../../../platform/configuration/common/configurationRegistry.js';
 -import * as jsonContributionRegistry from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
 -import { ExtensionsConfigurationSchema, ExtensionsConfigurationSchemaId } from '../common/extensionsFileTemplate.js';
@@ -48,7 +52,43 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -import { IEditorService } from '../../../services/editor/common/editorService.js';
 -import { MultiCommand } from '../../../../editor/browser/editorExtensions.js';
 -import { IWebview } from '../../webview/browser/webview.js';
++// import { ExtensionsLocalizedLabel, IExtensionManagementService, IExtensionGalleryService, PreferencesLocalizedLabel, EXTENSION_INSTALL_SOURCE_CONTEXT, ExtensionInstallSource, SortBy, FilterType, VerifyExtensionSignatureConfigKey } from '../../../../platform/extensionManagement/common/extensionManagement.js';
++// import { EnablementState, IExtensionManagementServerService, IPublisherInfo, IWorkbenchExtensionEnablementService, IWorkbenchExtensionManagementService } from '../../../services/extensionManagement/common/extensionManagement.js';
++// import { IExtensionIgnoredRecommendationsService, IExtensionRecommendationsService } from '../../../services/extensionRecommendations/common/extensionRecommendations.js';
++// import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions, IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
++// import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
 +import { IExtensionsWorkbenchService } from '../common/extensions.js';
++// import { InstallSpecificVersionOfExtensionAction, ConfigureWorkspaceRecommendedExtensionsAction, ConfigureWorkspaceFolderRecommendedExtensionsAction, SetColorThemeAction, SetFileIconThemeAction, SetProductIconThemeAction, ClearLanguageAction, ToggleAutoUpdateForExtensionAction, ToggleAutoUpdatesForPublisherAction, TogglePreReleaseExtensionAction, InstallAnotherVersionAction, InstallAction } from './extensionsActions.js';
++// import { ExtensionsInput } from '../common/extensionsInput.js';
++// import { ExtensionEditor } from './extensionEditor.js';
++// import { StatusUpdater, MaliciousExtensionChecker, ExtensionsViewletViewsContribution, ExtensionsViewPaneContainer, BuiltInExtensionsContext, SearchMarketplaceExtensionsContext, RecommendedExtensionsContext, ExtensionsSortByContext, SearchHasTextContext, ExtensionsSearchValueContext, ExtensionMarketplaceStatusUpdater } from './extensionsViewlet.js';
++// import { IConfigurationRegistry, Extensions as ConfigurationExtensions, ConfigurationScope } from '../../../../platform/configuration/common/configurationRegistry.js';
++// import * as jsonContributionRegistry from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
++// import { ExtensionsConfigurationSchema, ExtensionsConfigurationSchemaId } from '../common/extensionsFileTemplate.js';
++// import { CommandsRegistry, ICommandService } from '../../../../platform/commands/common/commands.js';
++// import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
++// import { KeymapExtensions } from '../common/extensionsUtils.js';
++// import { areSameExtensions, getIdAndVersion } from '../../../../platform/extensionManagement/common/extensionManagementUtil.js';
++// import { EditorPaneDescriptor, IEditorPaneRegistry } from '../../../browser/editor.js';
++// import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
++// import { URI, UriComponents } from '../../../../base/common/uri.js';
++// import { ExtensionActivationProgress } from './extensionsActivationProgress.js';
++// import { onUnexpectedError } from '../../../../base/common/errors.js';
++// import { ExtensionDependencyChecker } from './extensionsDependencyChecker.js';
++// import { CancellationToken } from '../../../../base/common/cancellation.js';
++// import { IViewContainersRegistry, ViewContainerLocation, Extensions as ViewContainerExtensions } from '../../../common/views.js';
++// import { IViewsService } from '../../../services/views/common/viewsService.js';
++// import { IClipboardService } from '../../../../platform/clipboard/common/clipboardService.js';
++// import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
++// import { ContextKeyExpr, IContextKeyService, RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
++// import { IQuickAccessRegistry, Extensions } from '../../../../platform/quickinput/common/quickAccess.js';
++// import { InstallExtensionQuickAccessProvider, ManageExtensionsQuickAccessProvider } from './extensionsQuickAccess.js';
++// import { ExtensionRecommendationsService } from './extensionRecommendationsService.js';
++// import { CONTEXT_SYNC_ENABLEMENT } from '../../../services/userDataSync/common/userDataSync.js';
++// import { CopyAction, CutAction, PasteAction } from '../../../../editor/contrib/clipboard/browser/clipboard.js';
++// import { IEditorService } from '../../../services/editor/common/editorService.js';
++// import { MultiCommand } from '../../../../editor/browser/editorExtensions.js';
++// import { IWebview } from '../../webview/browser/webview.js';
  import { ExtensionsWorkbenchService } from './extensionsWorkbenchService.js';
 -import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
 -import { IExtensionRecommendationNotificationService } from '../../../../platform/extensionRecommendations/common/extensionRecommendations.js';
@@ -84,9 +124,48 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -import { IProductService } from '../../../../platform/product/common/productService.js';
 -import { IUserDataProfilesService } from '../../../../platform/userDataProfile/common/userDataProfile.js';
 -import product from '../../../../platform/product/common/product.js';
--import { ExtensionGalleryResourceType, ExtensionGalleryServiceUrlConfigKey, getExtensionGalleryManifestResourceUri, IExtensionGalleryManifest, IExtensionGalleryManifestService } from '../../../../platform/extensionManagement/common/extensionGalleryManifest.js';
+-import { ExtensionGalleryResourceType, ExtensionGalleryServiceUrlConfigKey, getExtensionGalleryManifestResourceUri, IExtensionGalleryManifestService, ExtensionGalleryManifestStatus, IExtensionGalleryManifest } from '../../../../platform/extensionManagement/common/extensionGalleryManifest.js';
 -import { ILanguageModelToolsService } from '../../chat/common/languageModelToolsService.js';
 -import { SearchExtensionsTool, SearchExtensionsToolData } from '../common/searchExtensionsTool.js';
+-import { DEFAULT_ACCOUNT_SIGN_IN_COMMAND } from '../../../services/accounts/common/defaultAccount.js';
++// import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
++// import { IExtensionRecommendationNotificationService } from '../../../../platform/extensionRecommendations/common/extensionRecommendations.js';
++// import { ExtensionRecommendationNotificationService } from './extensionRecommendationNotificationService.js';
++// import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
++// import { IHostService } from '../../../services/host/browser/host.js';
++// import { ResourceContextKey, WorkbenchStateContext } from '../../../common/contextkeys.js';
++// import { IAction } from '../../../../base/common/actions.js';
++// import { IWorkspaceExtensionsConfigService } from '../../../services/extensionRecommendations/common/workspaceExtensionsConfig.js';
++// import { Schemas } from '../../../../base/common/network.js';
++// import { ShowRuntimeExtensionsAction } from './abstractRuntimeExtensionsEditor.js';
++// import { ExtensionEnablementWorkspaceTrustTransitionParticipant } from './extensionEnablementWorkspaceTrustTransitionParticipant.js';
++// import { clearSearchResultsIcon, configureRecommendedIcon, extensionsViewIcon, filterIcon, installWorkspaceRecommendedIcon, refreshIcon } from './extensionsIcons.js';
++// import { EXTENSION_CATEGORIES, ExtensionType } from '../../../../platform/extensions/common/extensions.js';
++// import { Disposable, DisposableStore, IDisposable, isDisposable } from '../../../../base/common/lifecycle.js';
++// import { IDialogService, IFileDialogService } from '../../../../platform/dialogs/common/dialogs.js';
++// import { mnemonicButtonLabel } from '../../../../base/common/labels.js';
++// import { Query } from '../common/extensionQuery.js';
++// import { EditorExtensions } from '../../../common/editor.js';
++// import { WORKSPACE_TRUST_EXTENSION_SUPPORT } from '../../../services/workspaces/common/workspaceTrust.js';
++// import { ExtensionsCompletionItemsProvider } from './extensionsCompletionItemsProvider.js';
++// import { IQuickInputService } from '../../../../platform/quickinput/common/quickInput.js';
++// import { Event } from '../../../../base/common/event.js';
++// import { UnsupportedExtensionsMigrationContrib } from './unsupportedExtensionsMigrationContribution.js';
++// import { isNative, isWeb } from '../../../../base/common/platform.js';
++// import { ExtensionStorageService } from '../../../../platform/extensionManagement/common/extensionStorage.js';
++// import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
++// import { IStringDictionary } from '../../../../base/common/collections.js';
++// import { CONTEXT_KEYBINDINGS_EDITOR } from '../../preferences/common/preferences.js';
++// import { ProgressLocation } from '../../../../platform/progress/common/progress.js';
++// import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
++// import { IConfigurationMigrationRegistry, Extensions as ConfigurationMigrationExtensions } from '../../../common/configuration.js';
++// import { IProductService } from '../../../../platform/product/common/productService.js';
++// import { IUserDataProfilesService } from '../../../../platform/userDataProfile/common/userDataProfile.js';
++// import product from '../../../../platform/product/common/product.js';
++// import { ExtensionGalleryResourceType, ExtensionGalleryServiceUrlConfigKey, getExtensionGalleryManifestResourceUri, IExtensionGalleryManifestService, ExtensionGalleryManifestStatus, IExtensionGalleryManifest } from '../../../../platform/extensionManagement/common/extensionGalleryManifest.js';
++// import { ILanguageModelToolsService } from '../../chat/common/languageModelToolsService.js';
++// import { SearchExtensionsTool, SearchExtensionsToolData } from '../common/searchExtensionsTool.js';
++// import { DEFAULT_ACCOUNT_SIGN_IN_COMMAND } from '../../../services/accounts/common/defaultAccount.js';
  
  // Singletons
  registerSingleton(IExtensionsWorkbenchService, ExtensionsWorkbenchService, InstantiationType.Eager /* Auto updates extensions */);
@@ -528,8 +607,7 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -	constructor(
 -		@IExtensionManagementService private readonly extensionManagementService: IExtensionManagementService,
 -		@IExtensionManagementServerService private readonly extensionManagementServerService: IExtensionManagementServerService,
--		@IExtensionGalleryService extensionGalleryService: IExtensionGalleryService,
--		@IExtensionGalleryManifestService extensionGalleryManifestService: IExtensionGalleryManifestService,
+-		@IExtensionGalleryManifestService private readonly extensionGalleryManifestService: IExtensionGalleryManifestService,
 -		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 -		@IViewsService private readonly viewsService: IViewsService,
 -		@IExtensionsWorkbenchService private readonly extensionsWorkbenchService: IExtensionsWorkbenchService,
@@ -540,11 +618,6 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -		@IProductService private readonly productService: IProductService,
 -	) {
 -		super();
--		const hasGalleryContext = CONTEXT_HAS_GALLERY.bindTo(contextKeyService);
--		if (extensionGalleryService.isEnabled()) {
--			hasGalleryContext.set(true);
--		}
--
 -		const hasLocalServerContext = CONTEXT_HAS_LOCAL_SERVER.bindTo(contextKeyService);
 -		if (this.extensionManagementServerService.localExtensionManagementServer) {
 -			hasLocalServerContext.set(true);
@@ -560,17 +633,24 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -			hasWebServerContext.set(true);
 -		}
 -
+-		this.updateExtensionGalleryStatusContexts();
+-		this._register(extensionGalleryManifestService.onDidChangeExtensionGalleryManifestStatus(() => this.updateExtensionGalleryStatusContexts()));
 -		extensionGalleryManifestService.getExtensionGalleryManifest()
 -			.then(extensionGalleryManifest => {
--				this.registerGalleryCapabilitiesContexts(extensionGalleryManifest);
--				this._register(extensionGalleryManifestService.onDidChangeExtensionGalleryManifest(extensionGalleryManifest => this.registerGalleryCapabilitiesContexts(extensionGalleryManifest)));
+-				this.updateGalleryCapabilitiesContexts(extensionGalleryManifest);
+-				this._register(extensionGalleryManifestService.onDidChangeExtensionGalleryManifest(extensionGalleryManifest => this.updateGalleryCapabilitiesContexts(extensionGalleryManifest)));
 -			});
 -		this.registerGlobalActions();
 -		this.registerContextMenuActions();
 -		this.registerQuickAccessProvider();
 -	}
 -
--	private async registerGalleryCapabilitiesContexts(extensionGalleryManifest: IExtensionGalleryManifest | null): Promise<void> {
+-	private async updateExtensionGalleryStatusContexts(): Promise<void> {
+-		CONTEXT_HAS_GALLERY.bindTo(this.contextKeyService).set(this.extensionGalleryManifestService.extensionGalleryManifestStatus === ExtensionGalleryManifestStatus.Available);
+-		CONTEXT_EXTENSIONS_GALLERY_STATUS.bindTo(this.contextKeyService).set(this.extensionGalleryManifestService.extensionGalleryManifestStatus);
+-	}
+-
+-	private async updateGalleryCapabilitiesContexts(extensionGalleryManifest: IExtensionGalleryManifest | null): Promise<void> {
 -		CONTEXT_GALLERY_SORT_CAPABILITIES.bindTo(this.contextKeyService).set(`_${extensionGalleryManifest?.capabilities.extensionQuery.sorting?.map(s => s.name)?.join('_')}_UpdateDate_`);
 -		CONTEXT_GALLERY_FILTER_CAPABILITIES.bindTo(this.contextKeyService).set(`_${extensionGalleryManifest?.capabilities.extensionQuery.filtering?.map(s => s.name)?.join('_')}_`);
 -		CONTEXT_GALLERY_ALL_PUBLIC_REPOSITORY_SIGNED.bindTo(this.contextKeyService).set(!!extensionGalleryManifest?.capabilities?.signing?.allPublicRepositorySigned);
@@ -2028,6 +2108,7 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -workbenchRegistry.registerWorkbenchContribution(ExtensionsCompletionItemsProvider, LifecyclePhase.Restored);
 -workbenchRegistry.registerWorkbenchContribution(UnsupportedExtensionsMigrationContrib, LifecyclePhase.Eventually);
 -workbenchRegistry.registerWorkbenchContribution(TrustedPublishersInitializer, LifecyclePhase.Eventually);
+-workbenchRegistry.registerWorkbenchContribution(ExtensionMarketplaceStatusUpdater, LifecyclePhase.Eventually);
 -if (isWeb) {
 -	workbenchRegistry.registerWorkbenchContribution(ExtensionStorageCleaner, LifecyclePhase.Eventually);
 -}
@@ -2037,6 +2118,22 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/extensions/browser/extens
 -
 -// Running Extensions
 -registerAction2(ShowRuntimeExtensionsAction);
+-
+-registerAction2(class ExtensionsGallerySignInAction extends Action2 {
+-	constructor() {
+-		super({
+-			id: 'workbench.extensions.actions.gallery.signIn',
+-			title: localize2('signInToMarketplace', 'Sign in to access Extensions Marketplace'),
+-			menu: {
+-				id: MenuId.AccountsContext,
+-				when: CONTEXT_EXTENSIONS_GALLERY_STATUS.isEqualTo(ExtensionGalleryManifestStatus.RequiresSignIn)
+-			},
+-		});
+-	}
+-	run(accessor: ServicesAccessor): Promise<void> {
+-		return accessor.get(ICommandService).executeCommand(DEFAULT_ACCOUNT_SIGN_IN_COMMAND);
+-	}
+-});
 -
 -Registry.as<IConfigurationMigrationRegistry>(ConfigurationMigrationExtensions.ConfigurationMigration)
 -	.registerConfigurationMigrations([{
@@ -4023,34 +4120,24 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/mcp/browser/mcpCommands.t
 ===================================================================
 --- code-server.orig/lib/vscode/src/vs/workbench/contrib/mcp/browser/mcpCommands.ts
 +++ code-server/lib/vscode/src/vs/workbench/contrib/mcp/browser/mcpCommands.ts
-@@ -55,7 +55,7 @@ import { VSBuffer } from '../../../../ba
- import { IProductService } from '../../../../platform/product/common/productService.js';
- import { IOpenerService } from '../../../../platform/opener/common/opener.js';
- import { CHAT_CONFIG_MENU_ID } from '../../chat/browser/actions/chatActions.js';
+@@ -55,7 +55,7 @@ import { ChatViewId, IChatWidgetService
+ import { ChatContextKeys } from '../../chat/common/chatContextKeys.js';
+ import { ChatModeKind } from '../../chat/common/constants.js';
+ import { ILanguageModelsService } from '../../chat/common/languageModels.js';
 -import { VIEW_CONTAINER } from '../../extensions/browser/extensions.contribution.js';
 +// import { VIEW_CONTAINER } from '../../extensions/browser/extensions.contribution.js';
- 
- // acroynms do not get localized
- const category: ILocalizedString = {
-@@ -735,12 +735,12 @@ export class ShowInstalledMcpServersComm
- 	}
- 
- 	async run(accessor: ServicesAccessor) {
--		const viewsService = accessor.get(IViewsService);
--		const view = await viewsService.openView(InstalledMcpServersViewId, true);
--		if (!view) {
+ import { extensionsFilterSubMenu, IExtensionsWorkbenchService } from '../../extensions/common/extensions.js';
+ import { TEXT_FILE_EDITOR_ID } from '../../files/common/files.js';
+ import { McpCommandIds } from '../common/mcpCommandIds.js';
+@@ -863,7 +863,7 @@ export class ShowInstalledMcpServersComm
+ 		const viewsService = accessor.get(IViewsService);
+ 		const view = await viewsService.openView(InstalledMcpServersViewId, true);
+ 		if (!view) {
 -			await viewsService.openViewContainer(VIEW_CONTAINER.id);
--			await viewsService.openView(InstalledMcpServersViewId, true);
--		}
-+		// const viewsService = accessor.get(IViewsService);
-+		// const view = await viewsService.openView(InstalledMcpServersViewId, true);
-+		// if (!view) {
-+		// 	await viewsService.openViewContainer(VIEW_CONTAINER.id);
-+		// 	await viewsService.openView(InstalledMcpServersViewId, true);
-+		// }
++			// await viewsService.openViewContainer(VIEW_CONTAINER.id);
+ 			await viewsService.openView(InstalledMcpServersViewId, true);
+ 		}
  	}
- }
- 
 Index: code-server/lib/vscode/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
 ===================================================================
 --- code-server.orig/lib/vscode/src/vs/workbench/contrib/mcp/browser/mcpServersView.ts
@@ -4069,16 +4156,16 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/mcp/browser/mcpServersVie
  import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 @@ -23,8 +23,8 @@ import { IOpenerService } from '../../..
  import { IThemeService } from '../../../../platform/theme/common/themeService.js';
- import { getLocationBasedViewColors, ViewPane } from '../../../browser/parts/views/viewPane.js';
+ import { getLocationBasedViewColors } from '../../../browser/parts/views/viewPane.js';
  import { IViewletViewOptions } from '../../../browser/parts/views/viewsViewlet.js';
--import { IViewDescriptorService, IViewsRegistry, Extensions as ViewExtensions } from '../../../common/views.js';
--import { HasInstalledMcpServersContext, IMcpWorkbenchService, InstalledMcpServersViewId, IWorkbenchMcpServer, McpServerContainers, mcpServerIcon, McpServerInstallState } from '../common/mcpTypes.js';
-+import { IViewDescriptorService } from '../../../common/views.js';
-+import { IMcpWorkbenchService, IWorkbenchMcpServer, McpServerContainers, mcpServerIcon, McpServerInstallState } from '../common/mcpTypes.js';
- import { DropDownAction, InstallAction, InstallingLabelAction, ManageMcpServerAction } from './mcpServerActions.js';
- import { PublisherWidget, InstallCountWidget, RatingsWidget, McpServerIconWidget } from './mcpServerWidgets.js';
+-import { IViewDescriptorService, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from '../../../common/views.js';
+-import { HasInstalledMcpServersContext, IMcpWorkbenchService, InstalledMcpServersViewId, IWorkbenchMcpServer, McpServerContainers, McpServerInstallState } from '../common/mcpTypes.js';
++import { IViewDescriptorService, ViewContainerLocation } from '../../../common/views.js';
++import { IMcpWorkbenchService, IWorkbenchMcpServer, McpServerContainers, McpServerInstallState } from '../common/mcpTypes.js';
+ import { DropDownAction, InstallAction, InstallingLabelAction, ManageMcpServerAction, McpServerStatusAction } from './mcpServerActions.js';
+ import { PublisherWidget, InstallCountWidget, RatingsWidget, McpServerIconWidget, McpServerHoverWidget, McpServerScopeBadgeWidget } from './mcpServerWidgets.js';
  import { ActionRunner, IAction, Separator } from '../../../../base/common/actions.js';
-@@ -33,14 +33,9 @@ import { IMcpGalleryService } from '../.
+@@ -33,14 +33,10 @@ import { IAllowedMcpServersService, IMcp
  import { URI } from '../../../../base/common/uri.js';
  import { ThemeIcon } from '../../../../base/common/themables.js';
  import { IProductService } from '../../../../platform/product/common/productService.js';
@@ -4087,13 +4174,14 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/mcp/browser/mcpServersVie
 -import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
 -import { DefaultViewsContext, SearchMcpServersContext } from '../../extensions/common/extensions.js';
 -import { VIEW_CONTAINER } from '../../extensions/browser/extensions.contribution.js';
++// import { VIEW_CONTAINER } from '../../extensions/browser/extensions.contribution.js';
  import { renderMarkdown } from '../../../../base/browser/markdownRenderer.js';
  import { MarkdownString } from '../../../../base/common/htmlContent.js';
 -import { ChatContextKeys } from '../../chat/common/chatContextKeys.js';
- 
- export interface McpServerListViewOptions {
- 	showWelcomeOnEmpty?: boolean;
-@@ -381,31 +376,31 @@ export class McpServersViewsContribution
+ import { Button } from '../../../../base/browser/ui/button/button.js';
+ import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+ import { AbstractExtensionsListView } from '../../extensions/browser/extensionsViews.js';
+@@ -427,31 +423,31 @@ export class McpServersViewsContribution
  	constructor() {
  		super();
  
