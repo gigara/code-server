@@ -3,6 +3,12 @@ name: Build Docker Image
 on:
   workflow_dispatch:
     inputs:
+      runner:
+        type: choice
+        description: 'Runner to use'
+        options:
+        - 'Runner_integration-web-editor'
+        - 'ubuntu-latest'
       version:
         description: 'Version to build (e.g., 4.9.1). Do not include "v" prefix'
         type: string
@@ -11,11 +17,11 @@ on:
       registry:
         description: 'Docker registry to use'
         required: true
-        default: digiopsacr.azurecr.io
+        default: docker.wso2.com
       namespace:
         description: 'Docker namespace to use'
         required: true
-        default: wso2  
+        default: docker.wso2.com  
 
 env:
   DISABLE_V8_COMPILE_CACHE: 1
@@ -23,7 +29,7 @@ env:
 jobs:
   build-and-package:
     name: Build code-server and Docker image
-    runs-on: ubuntu-22.04
+    runs-on: ${{ github.event.inputs.runner }}
     timeout-minutes: 60
     steps:
       - name: Checkout repo
@@ -133,11 +139,11 @@ jobs:
           tags: ${{ github.event.inputs.namespace }}/integration-web-editor:latest,${{ github.event.inputs.namespace }}/integration-web-editor:${{ inputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          outputs: type=docker,dest=${{ runner.temp }}/devant-editor.tar
           push: true
 
-      - name: Upload packages artifact
+      - name: Upload Docker image
         uses: actions/upload-artifact@v4
         with:
-          name: packages-linux-amd64
-          path: ./release-packages/*
-          retention-days: 30
+          name: docker-image
+          path: ${{ runner.temp }}/devant-editor.tar
