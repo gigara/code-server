@@ -106,15 +106,18 @@ jobs:
       - name: Build release package
         run: npm run release
 
+      - name: Generate timestamp for CDN
+        run: echo "CDN_TIMESTAMP=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
       - name: Update package version
         run: |
           echo "Updating version in release/package.json to $VERSION"
           npm version --prefix release "$VERSION" --no-git-tag-version
           
-          echo "Updating version in lib/vscode/product.json"
+          echo "Updating version and CDN timestamp in lib/vscode/product.json"
           tmp=$(mktemp)
-          jq ".codeServerVersion = \"$VERSION\"" release/lib/vscode/product.json > "$tmp" && mv "$tmp" release/lib/vscode/product.json
-          chmod 644 release/lib/vscode/product.json
+          jq ".codeServerVersion = \"$VERSION\" | .cdnVersion = \"$CDN_TIMESTAMP\"" release/lib/vscode/product.json > "$tmp" && mv "$tmp" release/lib/vscode/product.json
+          chmod 644 release/lib/vscode/product.json  
 
       - name: Build standalone and packages
         run: |
@@ -157,7 +160,7 @@ jobs:
 
       - name: Copy static files to AWS S3
         run: |
-          aws s3 cp lib/vscode-reh-web-linux-x64/out s3://devant-cdn/${{ inputs.version }}/out --recursive
+          aws s3 cp lib/vscode-reh-web-linux-x64/out s3://devant-cdn/${{ env.CDN_TIMESTAMP }}/out --recursive
 
       - name: Upload Docker image
         uses: actions/upload-artifact@v4

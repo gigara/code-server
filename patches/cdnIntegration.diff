@@ -15,9 +15,9 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  			linkProtectionTrustedDomains,
  		};
  
-+		const cdnAccessible = await fetch(`https://devant-cdn.wso2.com/${productConfiguration.codeServerVersion}/out/vs/code/browser/workbench/workbench.js`);
++		const cdnAccessible = await fetch(`https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}/out/vs/code/browser/workbench/workbench.js`);
 +		if (cdnAccessible.status === 200) {
-+			staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.codeServerVersion}`;
++			staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}`;
 +		}
 +
  		const proposedApi = this._environmentService.args['enable-proposed-api'];
@@ -69,3 +69,15 @@ Index: code-server/lib/vscode/src/vs/workbench/contrib/webview/browser/pre/index
  					return start(parentOrigin)
  				}
  
+Index: code-server/lib/vscode/src/vs/base/common/product.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/base/common/product.ts
++++ code-server/lib/vscode/src/vs/base/common/product.ts
+@@ -57,6 +57,7 @@ export type ExtensionVirtualWorkspaceSup
+ 
+ export interface IProductConfiguration {
+ 	readonly codeServerVersion?: string
++	readonly cdnVersion?: string
+ 	readonly rootEndpoint?: string
+ 	readonly updateEndpoint?: string
+ 	readonly logoutEndpoint?: string
