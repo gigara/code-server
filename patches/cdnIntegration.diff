@@ -1,0 +1,46 @@
+Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/server/node/webClientServer.ts
++++ code-server/lib/vscode/src/vs/server/node/webClientServer.ts
+@@ -325,7 +325,7 @@ export class WebClientServer {
+ 			this._logService.trace(`[WebClientServer] Request URL: ${req.url}, basePath: ${basePath}, remoteAuthority: ${remoteAuthority}`);
+ 		}
+ 
+-		const staticRoute = posix.join(basePath, this._productPath, STATIC_PATH);
++		let staticRoute = posix.join(basePath, this._productPath, STATIC_PATH);
+ 		const callbackRoute = posix.join(basePath, this._productPath, CALLBACK_PATH);
+ 
+ 		const resolveWorkspaceURI = (defaultLocation?: string) => defaultLocation && URI.file(resolve(defaultLocation)).with({ scheme: Schemas.vscodeRemote, authority: remoteAuthority });
+@@ -363,6 +363,11 @@ export class WebClientServer {
+ 			linkProtectionTrustedDomains,
+ 		};
+ 
++		const cdnAccessible = await fetch(`https://devant-cdn.wso2.com/${productConfiguration.codeServerVersion}/out/vs/code/browser/workbench/workbench.js`);
++		if (cdnAccessible.status === 200) {
++			staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.codeServerVersion}`;
++		}
++
+ 		const proposedApi = this._environmentService.args['enable-proposed-api'];
+ 		if (proposedApi?.length) {
+ 			productConfiguration.extensionsEnabledWithApiProposalVersion ??= [];
+@@ -455,15 +460,15 @@ export class WebClientServer {
+ 
+ 		const cspDirectives = [
+ 			'default-src \'self\';',
+-			'img-src \'self\' https: data: blob:;',
++			'img-src \'self\' https://devant-cdn.wso2.com https: data: blob:;',
+ 			'media-src \'self\';',
+-			`script-src 'self' 'unsafe-eval' ${WORKBENCH_NLS_BASE_URL ?? ''} blob: 'nonce-1nline-m4p' ${this._getScriptCspHashes(data).join(' ')} '${webWorkerExtensionHostIframeScriptSHA}' 'sha256-/r7rqQ+yrxt57sxLuQ6AMYcy/lUpvAIzHjIJt/OeLWU=' ${useTestResolver ? '' : ``};`,  // the sha is the same as in src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
++			`script-src 'self' https://devant-cdn.wso2.com 'unsafe-eval' ${WORKBENCH_NLS_BASE_URL ?? ''} blob: 'nonce-1nline-m4p' ${this._getScriptCspHashes(data).join(' ')} '${webWorkerExtensionHostIframeScriptSHA}' 'sha256-/r7rqQ+yrxt57sxLuQ6AMYcy/lUpvAIzHjIJt/OeLWU=' ${useTestResolver ? '' : ``};`,  // the sha is the same as in src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
+ 			'child-src \'self\';',
+-			`frame-src 'self' https://*.vscode-cdn.net data:;`,
++			`frame-src 'self' https://devant-cdn.wso2.com https://*.vscode-cdn.net data:;`,
+ 			'worker-src \'self\' data: blob:;',
+-			'style-src \'self\' \'unsafe-inline\';',
++			'style-src \'self\' https://devant-cdn.wso2.com \'unsafe-inline\';',
+ 			'connect-src \'self\' ws: wss: https:;',
+-			'font-src \'self\' blob:;',
++			'font-src \'self\' https://devant-cdn.wso2.com blob:;',
+ 			'manifest-src \'self\';'
+ 		].join(' ');
+ 
