@@ -44,3 +44,28 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  			'manifest-src \'self\';'
  		].join(' ');
  
+Index: code-server/lib/vscode/src/vs/workbench/contrib/webview/browser/pre/index.html
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/workbench/contrib/webview/browser/pre/index.html
++++ code-server/lib/vscode/src/vs/workbench/contrib/webview/browser/pre/index.html
+@@ -5,7 +5,7 @@
+ 	<meta charset="UTF-8">
+ 
+ 	<meta http-equiv="Content-Security-Policy"
+-		content="default-src 'none'; script-src 'sha256-q8xbX8bFRtUAF+eVy0H2EWJWeyp3LsLyd7qwg1qndEg=' 'self'; frame-src 'self'; style-src 'unsafe-inline';">
++		content="default-src 'none'; script-src 'sha256-mHcEBbOFAqZDvzvYYvFoI/RVrLdmoTN/xSNSTai2Dv8=' 'self'; frame-src 'self'; style-src 'unsafe-inline';">
+ 
+ 	<!-- Disable pinch zooming -->
+ 	<meta name="viewport"
+@@ -351,9 +351,9 @@
+ 
+ 				const hostname = location.hostname;
+ 
+-				// It is safe to run if we are on the same host.
++				// It is safe to run if we are on the same host or the parent origin is cdn.
+ 				const parent = new URL(parentOrigin)
+-				if (parent.hostname === hostname) {
++				if (parent.hostname === hostname || hostname === 'devant-cdn.wso2.com') {
+ 					return start(parentOrigin)
+ 				}
+ 
