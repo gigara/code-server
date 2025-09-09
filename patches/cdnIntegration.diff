@@ -11,7 +11,15 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  		const callbackRoute = posix.join(basePath, this._productPath, CALLBACK_PATH);
  
  		const resolveWorkspaceURI = (defaultLocation?: string) => defaultLocation && URI.file(resolve(defaultLocation)).with({ scheme: Schemas.vscodeRemote, authority: remoteAuthority });
-@@ -363,6 +363,11 @@ export class WebClientServer {
+@@ -348,6 +348,7 @@ export class WebClientServer {
+ 
+ 		const productConfiguration: Partial<Mutable<IProductConfiguration>> = {
+ 			codeServerVersion: this._productService.codeServerVersion,
++			cdnVersion: this._productService.cdnVersion,
+ 			rootEndpoint: rootBase,
+ 			updateEndpoint: !this._environmentService.args['disable-update-check'] ? rootBase + '/update/check' : undefined,
+ 			logoutEndpoint: this._environmentService.args['auth'] && this._environmentService.args['auth'] !== "none" ? rootBase + '/logout' : undefined,
+@@ -363,6 +364,11 @@ export class WebClientServer {
  			linkProtectionTrustedDomains,
  		};
  
@@ -23,7 +31,7 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  		const proposedApi = this._environmentService.args['enable-proposed-api'];
  		if (proposedApi?.length) {
  			productConfiguration.extensionsEnabledWithApiProposalVersion ??= [];
-@@ -455,15 +460,15 @@ export class WebClientServer {
+@@ -455,15 +461,15 @@ export class WebClientServer {
  
  		const cspDirectives = [
  			'default-src \'self\';',
