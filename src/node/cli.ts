@@ -505,6 +505,7 @@ export interface DefaultedArgs extends ConfigArgs {
   "extensions-dir": string
   "user-data-dir": string
   "session-socket": string
+  "idle-timeout"?: number
   /* Positional arguments. */
   _: string[]
 }
