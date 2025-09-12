@@ -13,8 +13,8 @@ export class Heart {
 
   public constructor(
     private readonly heartbeatPath: string,
-    private readonly idleTimeout: number | undefined,
     private readonly isActive: () => Promise<boolean>,
+    private readonly idleTimeout?: number,
   ) {
     this.beat = this.beat.bind(this)
     this.alive = this.alive.bind(this)
