@@ -592,7 +592,7 @@ export async function setDefaults(cliArgs: UserProvidedArgs, configArgs?: Config
     args.password = process.env.PASSWORD
   }
 
-   if (process.env.IDLE_TIMEOUT) {
+  if (process.env.IDLE_TIMEOUT) {
     args["idle-timeout"] = parseInt(process.env.IDLE_TIMEOUT, 5)
   }
 

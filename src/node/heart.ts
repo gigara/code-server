@@ -51,7 +51,7 @@ export class Heart {
     }
   }
 
-    private startIdleCheck(): void {
+  private startIdleCheck(): void {
     // Check every minute if the idle timeout has been exceeded
     this.idleCheckTimer = setInterval(() => {
       const timeSinceLastBeat = Date.now() - this.lastHeartbeat
@@ -69,7 +69,7 @@ export class Heart {
     if (typeof this.heartbeatTimer !== "undefined") {
       clearTimeout(this.heartbeatTimer)
     }
-     if (typeof this.idleCheckTimer !== "undefined") {
+    if (typeof this.idleCheckTimer !== "undefined") {
       clearInterval(this.idleCheckTimer)
     }
   }
