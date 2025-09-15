@@ -94,6 +94,7 @@ export interface UserProvidedArgs extends UserProvidedCodeArgs {
   "welcome-text"?: string
   "abs-proxy-base-path"?: string
   i18n?: string
+  "idle-timeout"?: number
   /* Positional arguments. */
   _?: string[]
 }
@@ -259,6 +260,7 @@ export const options: Options<Required<UserProvidedArgs>> = {
     type: "string",
     description: "GitHub authentication token (can only be passed in via $GITHUB_TOKEN or the config file).",
   },
+  "idle-timeout": { type: "number", description: "Timeout in minutes to wait before shutting down when idle." },
   "proxy-domain": { type: "string[]", description: "Domain used for proxying ports." },
   "skip-auth-preflight": {
     type: "boolean",
@@ -503,6 +505,7 @@ export interface DefaultedArgs extends ConfigArgs {
   "extensions-dir": string
   "user-data-dir": string
   "session-socket": string
+  "idle-timeout"?: number
   /* Positional arguments. */
   _: string[]
 }
@@ -587,6 +590,10 @@ export async function setDefaults(cliArgs: UserProvidedArgs, configArgs?: Config
   let usingEnvPassword = !!process.env.PASSWORD
   if (process.env.PASSWORD) {
     args.password = process.env.PASSWORD
+  }
+
+  if (process.env.IDLE_TIMEOUT) {
+    args["idle-timeout"] = parseInt(process.env.IDLE_TIMEOUT, 5)
   }
 
   if (process.env.CS_DISABLE_FILE_DOWNLOADS?.match(/^(1|true)$/)) {
