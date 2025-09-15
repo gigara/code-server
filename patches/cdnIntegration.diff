@@ -25,7 +25,7 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  
 +		const cdnAccessible = await fetch(`https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}/out/vs/code/browser/workbench/workbench.js`);
 +		if (cdnAccessible.status === 200) {
-+			// staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}`;
++			staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}`;
 +		}
 +
  		const proposedApi = this._environmentService.args['enable-proposed-api'];
