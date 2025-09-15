@@ -25,7 +25,7 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  
 +		const cdnAccessible = await fetch(`https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}/out/vs/code/browser/workbench/workbench.js`);
 +		if (cdnAccessible.status === 200) {
-+			staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}`;
++			// staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}`;
 +		}
 +
  		const proposedApi = this._environmentService.args['enable-proposed-api'];
@@ -89,3 +89,52 @@ Index: code-server/lib/vscode/src/vs/base/common/product.ts
  	readonly rootEndpoint?: string
  	readonly updateEndpoint?: string
  	readonly logoutEndpoint?: string
+Index: code-server/lib/vscode/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
++++ code-server/lib/vscode/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
+@@ -4,7 +4,7 @@
+ 		<meta http-equiv="Content-Security-Policy" content="
+ 			default-src 'none';
+ 			child-src 'self' data: blob:;
+-			script-src 'self' 'unsafe-eval' 'sha256-yhZXuB8LS6t73dvNg6rtLX8y4PHLnqRm5+6DdOGkOcw=' https: http://localhost:* blob:;
++			script-src 'self' 'unsafe-eval' 'sha256-1TeqSjWJkrjlSA3cjPk0amkxhyWHefj1xvfIphPc/cc=' https: http://localhost:* blob:;
+ 			connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*;"/>
+ 	</head>
+ 	<body>
+@@ -83,7 +83,7 @@
+ 		const bootstrapNlsType = 'vscode.bootstrap.nls';
+ 
+ 		self.onmessage = (event) => {
+-			if (event.origin !== parentOrigin || event.data.type !== bootstrapNlsType) {
++			if ((event.origin !== parentOrigin && parentOrigin != 'https://devant-cdn.wso2.com') || event.data.type !== bootstrapNlsType) {
+ 				return;
+ 			}
+ 			const { data } = event.data;
+@@ -93,7 +93,7 @@
+ 		window.parent.postMessage({
+ 			vscodeWebWorkerExtHostId,
+ 			type: bootstrapNlsType
+-		}, '*');
++		}, document.referrer);
+ 	}
+ 
+ 	function createWorker(workerUrl, fileRoot, nlsMessages, nlsLanguage) {
+@@ -139,7 +139,7 @@
+ 					window.parent.postMessage({
+ 						vscodeWebWorkerExtHostId,
+ 						data
+-					}, parentOrigin, [data]);
++					}, document.referrer, [data]);
+ 				}
+ 			};
+ 
+@@ -149,7 +149,7 @@
+ 			};
+ 
+ 			self.onmessage = (event) => {
+-				if (event.origin !== parentOrigin) {
++				if (event.origin !== parentOrigin && parentOrigin != 'https://devant-cdn.wso2.com') {
+ 					return;
+ 				}
+ 				worker.postMessage(event.data, event.ports);
