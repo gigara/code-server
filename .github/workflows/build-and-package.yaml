@@ -184,6 +184,6 @@ jobs:
         if: ${{ github.event.inputs.pushToAcr == 'true' }}
         run: |
           docker load -i ${{ runner.temp }}/devant-editor.tar
-          docker tag digiopsacr.azurecr.io/integration-web-editor:latest digiopsacr.azurecr.io/integration-web-editor:${{ inputs.version }}
-          docker push digiopsacr.azurecr.io/integration-web-editor:latest
-          docker push digiopsacr.azurecr.io/integration-web-editor:${{ inputs.version }}
+          docker tag ${{ github.event.inputs.namespace }}/integration-web-editor:latest digiopsacr.azurecr.io/integration-web-editor:latest
+          docker tag ${{ github.event.inputs.namespace }}/integration-web-editor:${{ inputs.version }} digiopsacr.azurecr.io/integration-web-editor:${{ inputs.version }}
+          docker push digiopsacr.azurecr.io/integration-web-editor --all-tags
