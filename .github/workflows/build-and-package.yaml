@@ -25,7 +25,7 @@ on:
       pushToAcr:
         description: 'Push image to Azure Container Registry'
         required: false
-        default: 'false'  
+        type: boolean
 
 env:
   DISABLE_V8_COMPILE_CACHE: 1
