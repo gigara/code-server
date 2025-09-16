@@ -22,6 +22,10 @@ on:
         description: 'Docker namespace to use'
         required: true
         default: docker.wso2.com  
+      pushToAcr:
+        description: 'Push image to Azure Container Registry'
+        required: false
+        default: 'false'  
 
 env:
   DISABLE_V8_COMPILE_CACHE: 1
@@ -167,3 +171,19 @@ jobs:
         with:
           name: docker-image
           path: ${{ runner.temp }}/devant-editor.tar
+
+      - name: Log in to ACR registry
+        if: ${{ github.event.inputs.pushToAcr == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: digiopsacr.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_TOKEN }}
+
+      - name: Push built image to ACR
+        if: ${{ github.event.inputs.pushToAcr == 'true' }}
+        run: |
+          docker load -i ${{ runner.temp }}/devant-editor.tar
+          docker tag digiopsacr.azurecr.io/integration-web-editor:latest digiopsacr.azurecr.io/integration-web-editor:${{ inputs.version }}
+          docker push digiopsacr.azurecr.io/integration-web-editor:latest
+          docker push digiopsacr.azurecr.io/integration-web-editor:${{ inputs.version }}
