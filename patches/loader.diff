@@ -5,37 +5,368 @@ Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
 ===================================================================
 --- code-server.orig/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
 +++ code-server/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
-@@ -35,6 +35,9 @@
+@@ -30,17 +30,62 @@
+ 		<link rel="icon" href="{{BASE}}/_static/src/browser/media/favicon-dark-support.svg" />
+ 		<link rel="alternate icon" href="{{BASE}}/_static/src/browser/media/favicon.ico" type="image/x-icon" />
+ 		<link rel="manifest" href="{{VS_BASE}}/manifest.json" crossorigin="use-credentials" />
++		<link rel="stylesheet" href="{{WORKBENCH_WEB_BASE_URL}}/out/vs/code/browser/workbench/media/loader.css">
+ 		<style id="vscode-css-modules" type="text/css" media="screen"></style>
+ 
  	</head>
  
  	<body aria-label="">
-+		<div id="vscode-loader" style="display: flex; align-items: center; justify-content: center; height: 100vh;">
-+			<img src="{{BASE}}/_static/src/browser/media/loader.gif" alt="Loading..." width="400px"/>
++		<div id="vscode-loader" class="vscode-deployment-root">
++			<div class="vscode-deployment-header-box">
++				<h3>Your Cloud Editor instance is currently being configured.</h3>
++			</div>
++			<div class="vscode-deployment-content-box">
++				<div class="vscode-deployment-image-box">
++					<img src="{{WORKBENCH_WEB_BASE_URL}}/resources/server/loader.gif" alt="Gear Loading" class="vscode-deployment-img-fluid"/>
++				</div>
++				<div class="vscode-deployment-loading-box">
++					<div class="vscode-deployment-progress-box">
++						<div class="circular-progress-container">
++							<svg class="circular-progress" width="40" height="40" viewBox="0 0 40 40">
++								<circle class="progress-background" cx="20" cy="20" r="16" stroke-width="2.4" fill="none"/>
++								<circle class="progress-bar" cx="20" cy="20" r="16" stroke-width="2.4" fill="none"/>
++							</svg>
++							<div class="progress-text">70%</div>
++						</div>
++					</div>
++					<div class="vscode-deployment-text-box">
++						<h5 id="loading-status-text">Setting up workspace...</h5>
++					</div>
++				</div>
++			</div>
 +		</div>
  	</body>
  
  	<!-- Startup (do not modify order of script tags!) -->
+ 	<script>
+ 		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location).toString();
+ 		globalThis._VSCODE_FILE_ROOT = baseUrl + '/out/';
++
++		// Progress bar management
++		function updateProgress(percentage, status) {
++			const progressBar = document.querySelector('.progress-bar');
++			const progressText = document.querySelector('.progress-text');
++			const statusText = document.querySelector('#loading-status-text');
++
++			if (progressBar && progressText && statusText) {
++				// Calculate stroke-dashoffset for the percentage (125.66 is the circumference)
++				const circumference = 125.66;
++				const offset = circumference - (percentage / 100 * circumference);
++				progressBar.style.strokeDashoffset = offset;
++
++				// Update text
++				progressText.textContent = `${percentage}%`;
++				statusText.textContent = status;
++			} else {
++				console.warn('Progress elements not found:', { progressBar, progressText, statusText });
++			}
++		}
+ 	</script>
+ 	<script>
+ 		const sheet = document.getElementById('vscode-css-modules').sheet;
 Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench.html
 ===================================================================
 --- code-server.orig/lib/vscode/src/vs/code/browser/workbench/workbench.html
 +++ code-server/lib/vscode/src/vs/code/browser/workbench/workbench.html
-@@ -32,6 +32,9 @@
+@@ -27,17 +27,62 @@
+ 		<link rel="icon" href="{{BASE}}/_static/src/browser/media/favicon-dark-support.svg" />
+ 		<link rel="alternate icon" href="{{BASE}}/_static/src/browser/media/favicon.ico" type="image/x-icon" />
+ 		<link rel="manifest" href="{{VS_BASE}}/manifest.json" crossorigin="use-credentials" />
++		<link rel="stylesheet" href="{{WORKBENCH_WEB_BASE_URL}}/out/vs/code/browser/workbench/media/loader.css">
+ 		<link rel="stylesheet" href="{{WORKBENCH_WEB_BASE_URL}}/out/vs/code/browser/workbench/workbench.css">
+ 
  	</head>
  
  	<body aria-label="">
-+		<div id="vscode-loader" style="display: flex; align-items: center; justify-content: center; height: 100vh;">
-+			<img src="{{BASE}}/_static/src/browser/media/loader.gif" alt="Loading..." width="400px"/>
++		<div id="vscode-loader" class="vscode-deployment-root">
++			<div class="vscode-deployment-header-box">
++				<h3>Your Cloud Editor instance is currently being configured.</h3>
++			</div>
++			<div class="vscode-deployment-content-box">
++				<div class="vscode-deployment-image-box">
++					<img src="{{WORKBENCH_WEB_BASE_URL}}/resources/server/loader.gif" alt="Gear Loading" class="vscode-deployment-img-fluid"/>
++				</div>
++				<div class="vscode-deployment-loading-box">
++					<div class="vscode-deployment-progress-box">
++						<div class="circular-progress-container">
++							<svg class="circular-progress" width="40" height="40" viewBox="0 0 40 40">
++								<circle class="progress-background" cx="20" cy="20" r="16" stroke-width="2.4" fill="none"/>
++								<circle class="progress-bar" cx="20" cy="20" r="16" stroke-width="2.4" fill="none"/>
++							</svg>
++							<div class="progress-text">70%</div>
++						</div>
++					</div>
++					<div class="vscode-deployment-text-box">
++						<h5 id="loading-status-text">Setting up workspace...</h5>
++					</div>
++				</div>
++			</div>
 +		</div>
  	</body>
  
  	<!-- Startup (do not modify order of script tags!) -->
+ 	<script>
+ 		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location).toString();
+ 		globalThis._VSCODE_FILE_ROOT = baseUrl + '/out/';
++
++		// Progress bar management
++		function updateProgress(percentage, status) {
++			const progressBar = document.querySelector('.progress-bar');
++			const progressText = document.querySelector('.progress-text');
++			const statusText = document.querySelector('#loading-status-text');
++
++			if (progressBar && progressText && statusText) {
++				// Calculate stroke-dashoffset for the percentage (125.66 is the circumference)
++				const circumference = 125.66;
++				const offset = circumference - (percentage / 100 * circumference);
++				progressBar.style.strokeDashoffset = offset;
++
++				// Update text
++				progressText.textContent = `${percentage}%`;
++				statusText.textContent = status;
++			} else {
++				console.warn('Progress elements not found:', { progressBar, progressText, statusText });
++			}
++		}
+ 	</script>
+ 	<script>
+ 		performance.mark('code/willLoadWorkbenchMain');
 Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench.ts
 ===================================================================
 --- code-server.orig/lib/vscode/src/vs/code/browser/workbench/workbench.ts
 +++ code-server/lib/vscode/src/vs/code/browser/workbench/workbench.ts
-@@ -637,4 +637,5 @@ class WorkspaceProvider implements IWork
+@@ -585,6 +585,38 @@ class WorkspaceProvider implements IWork
+ 	}
+ }
+ 
++function updateCircularProgress(value: number, status?: string): void {
++	const progressBar = mainWindow.document.querySelector('.progress-bar') as SVGCircleElement;
++	const progressText = mainWindow.document.querySelector('.progress-text') as HTMLElement;
++	const statusText = mainWindow.document.querySelector('#loading-status-text') as HTMLElement;
++
++	if (!progressBar || !progressText || !statusText) {
++		return;
++	}
++
++	// Circular progress calculation
++	const circumference = 125.66;
++	const clampedValue = Math.min(100, Math.max(0, value));
++	const offset = circumference - (clampedValue / 100 * circumference);
++
++	// Apply the progress value
++	progressBar.style.strokeDashoffset = offset.toString();
++
++	// Update text with rounded value
++	progressText.textContent = `${Math.round(clampedValue)}%`;
++
++	// Apply completion styling when reaching 100%
++	if (clampedValue === 100) {
++		progressBar.classList.add('complete');
++		progressText.classList.add('complete', 'success');
++	}
++
++	// Update status text if provided
++	if (status) {
++		statusText.textContent = status;
++	}
++}
++
+ (function () {
+ 
+ 	// Find config by checking for DOM
+@@ -642,4 +674,24 @@ class WorkspaceProvider implements IWork
  			? undefined /* with a remote without embedder-preferred storage, store on the remote */
  			: new LocalStorageSecretStorageProvider(secretStorageCrypto),
  	});
-+	mainWindow.document.body.removeChild(document.getElementById('vscode-loader')!);
++
++	// Update progress bar to 100% before removing loader
++	try {
++		updateCircularProgress(100, 'Workspace ready!');
++
++		// Wait for 1 second to show the completed progress before removing the loader
++		setTimeout(() => {
++			const loaderElement = mainWindow.document.getElementById('vscode-loader');
++			if (loaderElement) {
++				mainWindow.document.body.removeChild(loaderElement);
++			}
++		}, 1000); // 1 second delay to show the completed progress
++	} catch (error) {
++		// Fallback: remove immediately if progress update fails
++		console.warn('Failed to update progress bar:', error);
++		const loaderElement = mainWindow.document.getElementById('vscode-loader');
++		if (loaderElement) {
++			mainWindow.document.body.removeChild(loaderElement);
++		}
++	}
  })();
+Index: code-server/lib/vscode/src/vs/code/browser/workbench/media/loader.css
+===================================================================
+--- /dev/null
++++ code-server/lib/vscode/src/vs/code/browser/workbench/media/loader.css
+@@ -0,0 +1,162 @@
++/*---------------------------------------------------------------------------------------------
++ *  Copyright (c) Microsoft Corporation. All rights reserved.
++ *  Licensed under the MIT License. See License.txt in the project root for license information.
++ *--------------------------------------------------------------------------------------------*/
++
++/* Loading page styles matching Devant */
++.vscode-deployment-root {
++	display: flex;
++	flex-direction: column;
++	justify-content: center;
++	align-items: center;
++	min-height: 100vh;
++	padding: 24px;
++}
++
++.vscode-deployment-header-box {
++	display: flex;
++	text-align: center;
++	flex-direction: column;
++	max-width: 372px;
++	margin-bottom: 32px;
++}
++
++.vscode-deployment-header-box h3 {
++	font-size: 1.375rem; /* 22px converted to rem (22/16) */
++	font-weight: medium;
++	font-stretch: normal;
++	font-style: normal;
++	line-height: 1.4;
++	letter-spacing: normal;
++	margin: 0;
++	font-family: 'Gilmer Medium';
++}
++
++.vscode-deployment-content-box {
++	display: flex;
++	flex-direction: column;
++	justify-content: center;
++	align-items: center;
++	margin: 24px 0;
++}
++
++.vscode-deployment-image-box {
++	display: flex;
++	justify-content: center;
++	align-items: center;
++	max-width: 300px;
++	margin: 0 auto;
++}
++
++.vscode-deployment-img-fluid {
++	width: 100%;
++	height: auto;
++	align-items: center;
++}
++
++.vscode-deployment-loading-box {
++	display: flex;
++	flex-direction: column;
++	align-items: center;
++}
++
++.vscode-deployment-progress-box {
++	margin: 16px 0;
++}
++
++.vscode-deployment-text-box h5 {
++	font-size: 0.8125rem; /* 13px converted to rem (13/16) */
++	font-weight: 600;
++	font-stretch: normal;
++	font-style: normal;
++	line-height: 1.8;
++	letter-spacing: normal;
++	margin: 0;
++	color: #2f5fa7;
++	font-family: 'Gilmer';
++}
++
++/* Circular Progress Styles */
++.circular-progress-container {
++	position: relative;
++	display: inline-flex;
++	align-items: center;
++	justify-content: center;
++	width: 40px;
++	height: 40px;
++}
++
++.circular-progress {
++	transform: rotate(-90deg);
++	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
++	width: 100%;
++	height: 100%;
++}
++
++.progress-background {
++	stroke: rgba(252, 252, 252, 0.988);
++	stroke-linecap: round;
++}
++
++.progress-bar {
++	stroke: #2f5fa7;
++	stroke-dasharray: 100.53;
++	stroke-dashoffset: 30.16; /* Start at 70% (100.53 - (0.7 * 100.53)) */
++	transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
++	stroke-linecap: round;
++}
++
++.progress-bar.complete {
++	stroke: #2f5fa7;
++	stroke-dashoffset: 0;
++}
++
++.progress-text {
++	position: absolute;
++	top: 0;
++	left: 0;
++	bottom: 0;
++	right: 0;
++	display: flex;
++	align-items: center;
++	justify-content: center;
++	font-size: 0.7rem;
++	font-weight: 500;
++	color: #1d2028;
++	letter-spacing: 0.02em;
++	line-height: 1;
++	font-family: 'Gilmer';
++}
++
++.progress-text.complete {
++	font-size: 0.6rem;
++	color: #1d2028;
++}
++
++.progress-text.success {
++	color: #1d2028;
++}
++
++/* Responsive design */
++@media (max-width: 768px) {
++	.vscode-deployment-root {
++		padding: 16px;
++	}
++
++	.vscode-deployment-header-box {
++		margin-bottom: 24px;
++		max-width: 100%;
++	}
++
++	.vscode-deployment-header-box h1 {
++		font-size: 1.25rem;
++	}
++
++	.vscode-deployment-content-box {
++		max-width: 100%;
++	}
++
++	.vscode-deployment-img-fluid {
++		max-width: 150px;
++	}
++}
