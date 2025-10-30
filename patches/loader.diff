@@ -9,7 +9,7 @@ Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
  		<link rel="icon" href="{{BASE}}/_static/src/browser/media/favicon-dark-support.svg" />
  		<link rel="alternate icon" href="{{BASE}}/_static/src/browser/media/favicon.ico" type="image/x-icon" />
  		<link rel="manifest" href="{{VS_BASE}}/manifest.json" crossorigin="use-credentials" />
-+		<link rel="stylesheet" href="{{WORKBENCH_WEB_BASE_URL}}/out/vs/code/browser/workbench/media/loader.css">
++		<link rel="stylesheet" href="{{BASE}}/_static/src/browser/media/loader.css">
  		<style id="vscode-css-modules" type="text/css" media="screen"></style>
  
  	</head>
@@ -370,3 +370,15 @@ Index: code-server/lib/vscode/src/vs/code/browser/workbench/media/loader.css
 +		max-width: 150px;
 +	}
 +}
+Index: code-server/lib/vscode/build/gulpfile.reh.js
+===================================================================
+--- code-server.orig/lib/vscode/build/gulpfile.reh.js
++++ code-server/lib/vscode/build/gulpfile.reh.js
+@@ -95,6 +95,7 @@ const serverResources = [
+ const serverWithWebResourceIncludes = [
+ 	...serverResourceIncludes,
+ 	'out-build/vs/code/browser/workbench/*.html',
++	'out-build/vs/code/browser/workbench/media/**',
+ 	...vscodeWebResourceIncludes
+ ];
+ 
