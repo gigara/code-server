@@ -36,6 +36,10 @@ copy-bin-script() {
 }
 
 main() {
+  # copy resources
+  # from resources folder with relative path in lib folder. also replace existing resources using rsync
+  rsync -av --progress resources/ lib/
+
   cd "$(dirname "${0}")/../.."
 
   source ./ci/lib.sh
@@ -140,10 +144,6 @@ main() {
   }
 EOF
   ) > product.json
-
-  # copy resources
-  # from resources folder with relative path in lib folder. also replace existing resources using rsync
-  rsync -av --progress resources/ lib/
 
   # Any platform here works since we will do our own packaging.  We have to do
   # this because we have an NPM package that could be installed on any platform.
