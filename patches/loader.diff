@@ -21,7 +21,7 @@ Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench-dev.html
 +			</div>
 +			<div class="vscode-deployment-content-box">
 +				<div class="vscode-deployment-image-box">
-+					<img src="{{WORKBENCH_WEB_BASE_URL}}/resources/server/loader.gif" alt="Gear Loading" class="vscode-deployment-img-fluid"/>
++					<img src="{{BASE}}/_static/src/browser/media/loader.gif" alt="Gear Loading" class="vscode-deployment-img-fluid"/>
 +				</div>
 +				<div class="vscode-deployment-loading-box">
 +					<div class="vscode-deployment-progress-box">
@@ -88,7 +88,7 @@ Index: code-server/lib/vscode/src/vs/code/browser/workbench/workbench.html
 +			</div>
 +			<div class="vscode-deployment-content-box">
 +				<div class="vscode-deployment-image-box">
-+					<img src="{{WORKBENCH_WEB_BASE_URL}}/resources/server/loader.gif" alt="Gear Loading" class="vscode-deployment-img-fluid"/>
++					<img src="{{BASE}}/_static/src/browser/media/loader.gif" alt="Gear Loading" class="vscode-deployment-img-fluid"/>
 +				</div>
 +				<div class="vscode-deployment-loading-box">
 +					<div class="vscode-deployment-progress-box">
