@@ -36,6 +36,10 @@ copy-bin-script() {
 }
 
 main() {
+  # copy resources
+  # from resources folder with relative path in lib folder. also replace existing resources using rsync
+  rsync -av --progress resources/ lib/
+
   cd "$(dirname "${0}")/../.."
 
   source ./ci/lib.sh

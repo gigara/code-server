@@ -11,19 +11,27 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  		const callbackRoute = posix.join(basePath, this._productPath, CALLBACK_PATH);
  
  		const resolveWorkspaceURI = (defaultLocation?: string) => defaultLocation && URI.file(resolve(defaultLocation)).with({ scheme: Schemas.vscodeRemote, authority: remoteAuthority });
-@@ -363,6 +363,11 @@ export class WebClientServer {
+@@ -348,6 +348,7 @@ export class WebClientServer {
+ 
+ 		const productConfiguration: Partial<Mutable<IProductConfiguration>> = {
+ 			codeServerVersion: this._productService.codeServerVersion,
++			cdnVersion: this._productService.cdnVersion,
+ 			rootEndpoint: rootBase,
+ 			updateEndpoint: !this._environmentService.args['disable-update-check'] ? rootBase + '/update/check' : undefined,
+ 			logoutEndpoint: this._environmentService.args['auth'] && this._environmentService.args['auth'] !== "none" ? rootBase + '/logout' : undefined,
+@@ -363,6 +364,11 @@ export class WebClientServer {
  			linkProtectionTrustedDomains,
  		};
  
-+		const cdnAccessible = await fetch(`https://devant-cdn.wso2.com/${productConfiguration.codeServerVersion}/out/vs/code/browser/workbench/workbench.js`);
++		const cdnAccessible = await fetch(`https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}/out/vs/code/browser/workbench/workbench.js`);
 +		if (cdnAccessible.status === 200) {
-+			staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.codeServerVersion}`;
++			staticRoute = `https://devant-cdn.wso2.com/${productConfiguration.cdnVersion}`;
 +		}
 +
  		const proposedApi = this._environmentService.args['enable-proposed-api'];
  		if (proposedApi?.length) {
  			productConfiguration.extensionsEnabledWithApiProposalVersion ??= [];
-@@ -455,15 +460,15 @@ export class WebClientServer {
+@@ -455,15 +461,15 @@ export class WebClientServer {
  
  		const cspDirectives = [
  			'default-src \'self\';',
@@ -44,3 +52,89 @@ Index: code-server/lib/vscode/src/vs/server/node/webClientServer.ts
  			'manifest-src \'self\';'
  		].join(' ');
  
+Index: code-server/lib/vscode/src/vs/workbench/contrib/webview/browser/pre/index.html
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/workbench/contrib/webview/browser/pre/index.html
++++ code-server/lib/vscode/src/vs/workbench/contrib/webview/browser/pre/index.html
+@@ -5,7 +5,7 @@
+ 	<meta charset="UTF-8">
+ 
+ 	<meta http-equiv="Content-Security-Policy"
+-		content="default-src 'none'; script-src 'sha256-q8xbX8bFRtUAF+eVy0H2EWJWeyp3LsLyd7qwg1qndEg=' 'self'; frame-src 'self'; style-src 'unsafe-inline';">
++		content="default-src 'none'; script-src 'sha256-H5zgl8LtbqOJcVIJ1xOcll70TKFFfzU+s4G9n+O06Gc=' 'self'; frame-src 'self'; style-src 'unsafe-inline';">
+ 
+ 	<!-- Disable pinch zooming -->
+ 	<meta name="viewport"
+@@ -351,9 +351,9 @@
+ 
+ 				const hostname = location.hostname;
+ 
+-				// It is safe to run if we are on the same host.
++				// It is safe to run if we are on the same host or the parent origin is cdn.
+ 				const parent = new URL(parentOrigin)
+-				if (parent.hostname === hostname) {
++				if (parent.hostname === hostname || hostname === 'devant-cdn.wso2.com') {
+ 					return start(parentOrigin)
+ 				}
+ 
+Index: code-server/lib/vscode/src/vs/base/common/product.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/base/common/product.ts
++++ code-server/lib/vscode/src/vs/base/common/product.ts
+@@ -57,6 +57,7 @@ export type ExtensionVirtualWorkspaceSup
+ 
+ export interface IProductConfiguration {
+ 	readonly codeServerVersion?: string
++	readonly cdnVersion?: string
+ 	readonly rootEndpoint?: string
+ 	readonly updateEndpoint?: string
+ 	readonly logoutEndpoint?: string
+Index: code-server/lib/vscode/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
++++ code-server/lib/vscode/src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
+@@ -4,7 +4,7 @@
+ 		<meta http-equiv="Content-Security-Policy" content="
+ 			default-src 'none';
+ 			child-src 'self' data: blob:;
+-			script-src 'self' 'unsafe-eval' 'sha256-yhZXuB8LS6t73dvNg6rtLX8y4PHLnqRm5+6DdOGkOcw=' https: http://localhost:* blob:;
++			script-src 'self' 'unsafe-eval' 'sha256-1TeqSjWJkrjlSA3cjPk0amkxhyWHefj1xvfIphPc/cc=' https: http://localhost:* blob:;
+ 			connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*;"/>
+ 	</head>
+ 	<body>
+@@ -83,7 +83,7 @@
+ 		const bootstrapNlsType = 'vscode.bootstrap.nls';
+ 
+ 		self.onmessage = (event) => {
+-			if (event.origin !== parentOrigin || event.data.type !== bootstrapNlsType) {
++			if ((event.origin !== parentOrigin && parentOrigin != 'https://devant-cdn.wso2.com') || event.data.type !== bootstrapNlsType) {
+ 				return;
+ 			}
+ 			const { data } = event.data;
+@@ -93,7 +93,7 @@
+ 		window.parent.postMessage({
+ 			vscodeWebWorkerExtHostId,
+ 			type: bootstrapNlsType
+-		}, '*');
++		}, document.referrer);
+ 	}
+ 
+ 	function createWorker(workerUrl, fileRoot, nlsMessages, nlsLanguage) {
+@@ -139,7 +139,7 @@
+ 					window.parent.postMessage({
+ 						vscodeWebWorkerExtHostId,
+ 						data
+-					}, parentOrigin, [data]);
++					}, document.referrer, [data]);
+ 				}
+ 			};
+ 
+@@ -149,7 +149,7 @@
+ 			};
+ 
+ 			self.onmessage = (event) => {
+-				if (event.origin !== parentOrigin) {
++				if (event.origin !== parentOrigin && parentOrigin != 'https://devant-cdn.wso2.com') {
+ 					return;
+ 				}
+ 				worker.postMessage(event.data, event.ports);

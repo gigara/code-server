@@ -22,6 +22,10 @@ on:
         description: 'Docker namespace to use'
         required: true
         default: docker.wso2.com  
+      pushToAcr:
+        description: 'Push image to Azure Container Registry'
+        required: false
+        type: boolean
 
 env:
   DISABLE_V8_COMPILE_CACHE: 1
@@ -106,15 +110,18 @@ jobs:
       - name: Build release package
         run: npm run release
 
+      - name: Generate timestamp for CDN
+        run: echo "CDN_TIMESTAMP=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
       - name: Update package version
         run: |
           echo "Updating version in release/package.json to $VERSION"
           npm version --prefix release "$VERSION" --no-git-tag-version
           
-          echo "Updating version in lib/vscode/product.json"
+          echo "Updating version and CDN timestamp in lib/vscode/product.json"
           tmp=$(mktemp)
-          jq ".codeServerVersion = \"$VERSION\"" release/lib/vscode/product.json > "$tmp" && mv "$tmp" release/lib/vscode/product.json
-          chmod 644 release/lib/vscode/product.json
+          jq ".codeServerVersion = \"$VERSION\" | .cdnVersion = \"$CDN_TIMESTAMP\"" release/lib/vscode/product.json > "$tmp" && mv "$tmp" release/lib/vscode/product.json
+          chmod 644 release/lib/vscode/product.json  
 
       - name: Build standalone and packages
         run: |
@@ -157,10 +164,26 @@ jobs:
 
       - name: Copy static files to AWS S3
         run: |
-          aws s3 cp lib/vscode-reh-web-linux-x64/out s3://devant-cdn/${{ inputs.version }}/out --recursive
+          aws s3 cp lib/vscode-reh-web-linux-x64/out s3://devant-cdn/${{ env.CDN_TIMESTAMP }}/out --recursive
 
       - name: Upload Docker image
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
           path: ${{ runner.temp }}/devant-editor.tar
+
+      - name: Log in to ACR registry
+        if: ${{ github.event.inputs.pushToAcr == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: digiopsacr.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_TOKEN }}
+
+      - name: Push built image to ACR
+        if: ${{ github.event.inputs.pushToAcr == 'true' }}
+        run: |
+          docker load -i ${{ runner.temp }}/devant-editor.tar
+          docker tag ${{ github.event.inputs.namespace }}/integration-web-editor:latest digiopsacr.azurecr.io/integration-web-editor:latest
+          docker tag ${{ github.event.inputs.namespace }}/integration-web-editor:${{ inputs.version }} digiopsacr.azurecr.io/integration-web-editor:${{ inputs.version }}
+          docker push digiopsacr.azurecr.io/integration-web-editor --all-tags

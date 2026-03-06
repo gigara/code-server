@@ -20,7 +20,7 @@ Index: code-server/src/node/routes/login.ts
  
  router.get("/", async (req, res) => {
 +  // Check for magic link authentication via URL parameter
-+  const urlPassword = sanitizeString(req.query.password as string)
++  const urlPassword = sanitizeString(req.query.tkn as string)
 +  
 +  if (urlPassword) {
 +    try {
